@@ -1,0 +1,24 @@
+useDynLib("qrjoint")
+
+# Export all functions listed below
+export(
+  qrjoint,
+  getBands,
+  waic,
+  chull.center
+)
+
+S3method(update, qrjoint)
+S3method(summary, qrjoint)
+S3method(coef, qrjoint)
+
+# Import all packages listed as Imports or Depends
+import(stats, graphics, grDevices)
+importFrom(Matrix, bdiag)
+importFrom(quantreg, rq)
+importFrom(quantreg, crq)
+importFrom(splines, bs)
+importFrom(coda, geweke.diag)
+importFrom(coda, as.mcmc)
+importFrom(kernlab, inchol)
+importFrom(kernlab, pivots)
