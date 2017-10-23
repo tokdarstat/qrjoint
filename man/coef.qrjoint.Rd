@@ -17,10 +17,11 @@
 \item{...}{limited plotting parameters that are passed onto the call of \code{\link{getBands}}}
 }
 \value{
-Extracts posterior draws of intercept and slope functions from saved draws of model parameters. A plot may be obtained if \code{plot = TRUE}. A list is returned invisibly with two fields.
+Extracts posterior draws of intercept and slope functions from saved draws of model parameters. A plot may be obtained if \code{plot = TRUE}. A list is returned invisibly with three fields.
 
 \item{beta.samp}{a matrix with \code{nmc} many columns and \code{(p+1)*length(tau.grid)} many rows.}
 \item{beta.est}{a list of length (p+1), \eqn{j}{j}-th element giving a 3-column matrix of median, 2.5th and 97.5th percentiles of the posterior distribution of \eqn{\beta_j}{{beta}[j]}}
+\item{parametric}{a matrix with 3 columns giving the estimate (posterior median) and the lower and upper end points of the 95\% posterior credible interval for \eqn{\gamma_0}{gamma0}, \eqn{\gamma}{gamma}, \eqn{\sigma}{sigma}, and, \eqn{\nu}{nu}.}
 }
 
 
