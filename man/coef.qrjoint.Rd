@@ -1,5 +1,5 @@
 \name{coef.qrjoint}
-\Rdversion{0.1-1}
+\Rdversion{1.0-5}
 \alias{coef.qrjoint}
 \title{Regression Coefficient Extraction from qrjoint Model Fit}
 \description{Post process MCMC output from \code{\link{qrjoint}} to create summaries of intercept and slope function estimates} 
