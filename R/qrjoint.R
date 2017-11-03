@@ -1,4 +1,4 @@
-qrjoint <- function(x, y, nsamp = 1e3, thin = 10, cens = rep(0,length(y)), wt = rep(1,length(y)), incr = 0.01, par = "prior", nknots = 6, hyper = list(sig = c(.1,.1), lam = c(6,4), kap = c(0.1,0.1,1)), shrink = FALSE, prox.range = c(.2,.95), acpt.target = 0.15, ref.size = 3, blocking = "std5", temp = 1, expo = 2, blocks.mu, blocks.S, fix.nu = FALSE, fbase = c("t", "unif")){
+qrjoint <- function(x, y, nsamp = 1e3, thin = 10, cens = rep(0,length(y)), wt = rep(1,length(y)), incr = 0.01, par = "prior", nknots = 6, hyper = list(sig = c(.1,.1), lam = c(6,4), kap = c(0.1,0.1,1)), shrink = FALSE, prox.range = c(.2,.95), acpt.target = 0.15, ref.size = 3, blocking = "std5", temp = 1, expo = 2, blocks.mu, blocks.S, fix.nu = FALSE, fbase = c("t", "unif"), verbose = TRUE){
     
     fbase.choice <- match(fbase[1], c("t", "unif"))
     if(is.na(fbase.choice)) stop("Only 't' or 'unif' is allowed for the choice of fbase")
@@ -37,7 +37,7 @@ qrjoint <- function(x, y, nsamp = 1e3, thin = 10, cens = rep(0,length(y)), wt = 
     a.sig <- hyper$sig; if(is.null(a.sig)) a.sig <- c(.1, .1)
     a.lam <- hyper$lam; if(is.null(a.lam)) a.lam <- c(6, 4)
     a.kap <- hyper$kap; if(is.null(a.kap)) a.kap <- c(1.5, 1.5, 1); a.kap <- matrix(a.kap, nrow = 3); nkap <- ncol(a.kap); a.kap[3,] <- log(a.kap[3,])
-    hyper <- c(a.sig, c(a.kap))
+    hyper.reduced <- c(a.sig, c(a.kap))
     
     prox.grid <- proxFn(max(prox.range), min(prox.range), 0.5)
     ngrid <- length(prox.grid)
@@ -93,7 +93,7 @@ qrjoint <- function(x, y, nsamp = 1e3, thin = 10, cens = rep(0,length(y)), wt = 
         
         infl <- max(max((y - qhat[,mid])/(qhat[,ncol(qhat) - 1] - qhat[,mid])), max((qhat[,mid] - y)/(qhat[,mid] - qhat[,2])))
         oo <- .C("INIT", par = as.double(par), x = as.double(x), y = as.double(y), cens = as.integer(cens), wt = as.double(wt),
-        shrink = as.integer(shrink), hyper = as.double(hyper), dim = as.integer(dimpars), gridpars = as.double(gridmats),
+        shrink = as.integer(shrink), hyper = as.double(hyper.reduced), dim = as.integer(dimpars), gridpars = as.double(gridmats),
         tau.g = as.double(tau.g), siglim = as.double(sigFn.inv(c(1.0 * infl * sigma, 10 * infl * sigma), a.sig)),
         fbase.choice = as.integer(fbase.choice))
         
@@ -156,10 +156,14 @@ qrjoint <- function(x, y, nsamp = 1e3, thin = 10, cens = rep(0,length(y)), wt = 
         infl <- max(max((y - qhat[,mid])/(qhat[,ncol(qhat) - 1] - qhat[,mid])), max((qhat[,mid] - y)/(qhat[,mid] - qhat[,2])))
         
         oo <- .C("INIT", par = as.double(par), x = as.double(x), y = as.double(y), cens = as.integer(cens),
-        wt = as.double(wt), shrink = as.integer(shrink), hyper = as.double(hyper), dim = as.integer(dimpars), gridpars = as.double(gridmats),
+        wt = as.double(wt), shrink = as.integer(shrink), hyper = as.double(hyper.reduced), dim = as.integer(dimpars), gridpars = as.double(gridmats),
         tau.g = as.double(tau.g), siglim = as.double(sigFn.inv(c(1.0 * infl * sigma, 10.0 * infl * sigma), a.sig)), fbase.choice = as.integer(fbase.choice))
         
         par <- oo$par
+    } else if (par[1] == "noX") {
+        fit0 <- qde(y, nsamp = 1e2, thin = 10, cens = cens, wt = wt, nknots = nknots, hyper = hyper, prox.range = prox.range, fbase = fbase, fix.nu = fix.nu, verbose = FALSE)
+        par <- rep(0, (nknots + 1) * (p + 1) + 2)
+        par[c(1:nknots, nknots * (p + 1) + 1, (nknots + 1) * (p + 1) + 1:2)] <- fit0$par
     }
     
     npar <- (nknots+1)*(p+1) + 2
@@ -231,24 +235,24 @@ qrjoint <- function(x, y, nsamp = 1e3, thin = 10, cens = rep(0,length(y)), wt = 
         blocks.S <- unlist(blocks.S)
     }
     
-    imcmc.par <- c(nblocks, ref.size, TRUE, max(10, niter/1e4), rep(0, nblocks))
+    imcmc.par <- c(nblocks, ref.size, verbose, max(10, niter/1e4), rep(0, nblocks))
     dmcmc.par <- c(temp, 0.999, rep(acpt.target, nblocks), 2.38 / sqrt(blocks.size))
     
     
     tm.c <- system.time(oo <- .C("BJQR", par = as.double(par), x = as.double(x), y = as.double(y), cens = as.integer(cens), wt = as.double(wt),
-    shrink = as.integer(shrink), hyper = as.double(hyper), dim = as.integer(dimpars), gridmats = as.double(gridmats), 
+    shrink = as.integer(shrink), hyper = as.double(hyper.reduced), dim = as.integer(dimpars), gridmats = as.double(gridmats),
     tau.g = as.double(tau.g), muV = as.double(blocks.mu), SV = as.double(blocks.S), blocks = as.integer(blocks.ix), 
     blocks.size = as.integer(blocks.size), dmcmcpar = as.double(dmcmc.par), 
     imcmcpar = as.integer(imcmc.par), parsamp = double(nsamp * length(par)), 
     acptsamp = double(nsamp * nblocks), lpsamp = double(nsamp), fbase.choice = as.integer(fbase.choice)))
-    cat("elapsed time:", round(tm.c[3]), "seconds\n")
+    if(verbose) cat("elapsed time:", round(tm.c[3]), "seconds\n")
     
     oo$x <- x; oo$y <- y; oo$xnames <- x.names; oo$gridmats <- gridmats; oo$prox <- prox.grid; oo$reg.ix <- reg.ix; oo$runtime <- tm.c[3]
     class(oo) <- "qrjoint"
     return(oo)
 }
 
-qde <- function(y, nsamp = 1e3, thin = 10, cens = rep(0,length(y)), wt = rep(1,length(y)), incr = 0.01, par = "prior", nknots = 6, hyper = list(sig = c(.1,.1), lam = c(6,4), kap = c(0.1,0.1,1)), prox.range = c(.2,.95), acpt.target = 0.15, ref.size = 3, blocking = "single", temp = 1, expo = 2, blocks.mu, blocks.S, fix.nu = FALSE, fbase = c("t", "unif")){
+qde <- function(y, nsamp = 1e3, thin = 10, cens = rep(0,length(y)), wt = rep(1,length(y)), incr = 0.01, par = "prior", nknots = 6, hyper = list(sig = c(.1,.1), lam = c(6,4), kap = c(0.1,0.1,1)), prox.range = c(.2,.95), acpt.target = 0.15, ref.size = 3, blocking = "single", temp = 1, expo = 2, blocks.mu, blocks.S, fix.nu = FALSE, fbase = c("t", "unif"), verbose = TRUE){
 	
     fbase.choice <- match(fbase[1], c("t", "unif"))
     if(is.na(fbase.choice)) stop("Only 't' or 'unif' is allowed for the choice of fbase")
@@ -285,7 +289,7 @@ qde <- function(y, nsamp = 1e3, thin = 10, cens = rep(0,length(y)), wt = rep(1,l
 	a.sig <- hyper$sig; if(is.null(a.sig)) a.sig <- c(.1, .1)
 	a.lam <- hyper$lam; if(is.null(a.lam)) a.lam <- c(6, 4)
 	a.kap <- hyper$kap; if(is.null(a.kap)) a.kap <- c(1.5, 1.5, 1); a.kap <- matrix(a.kap, nrow = 3); nkap <- ncol(a.kap); a.kap[3,] <- log(a.kap[3,])
-	hyper <- c(a.sig, c(a.kap))
+	hyper.reduced <- c(a.sig, c(a.kap))
 	
 	prox.grid <- proxFn(max(prox.range), min(prox.range), 0.5)
 	ngrid <- length(prox.grid)
@@ -334,7 +338,7 @@ qde <- function(y, nsamp = 1e3, thin = 10, cens = rep(0,length(y)), wt = rep(1,l
         qhat <- estFn.noX(par, y, gridmats, L, mid, nknots, ngrid, a.kap, a.sig, tau.g, reg.ix, base.bundle = base.bundle)
         infl <- max(max((y - qhat[mid])/(qhat[length(qhat) - 1] - qhat[mid])), max((qhat[mid] - y)/(qhat[mid] - qhat[2])))
         oo <- .C("INIT_noX", par = as.double(par), y = as.double(y), cens = as.integer(cens), wt = as.double(wt),
-                 hyper = as.double(hyper), dim = as.integer(dimpars), gridpars = as.double(gridmats),
+                 hyper = as.double(hyper.reduced), dim = as.integer(dimpars), gridpars = as.double(gridmats),
                  tau.g = as.double(tau.g), siglim = as.double(sigFn.inv(c(1.0 * infl * sigma, 10 * infl * sigma), a.sig)),
                  fbase.choice = as.integer(fbase.choice))
         par <- oo$par
@@ -384,7 +388,7 @@ qde <- function(y, nsamp = 1e3, thin = 10, cens = rep(0,length(y)), wt = rep(1,l
         qhat <- estFn.noX(par, y, gridmats, L, mid, nknots, ngrid, a.kap, a.sig, tau.g, reg.ix, base.bundle = base.bundle)
         infl <- max(max((y - qhat[mid])/(qhat[length(qhat) - 1] - qhat[mid])), max((qhat[mid] - y)/(qhat[mid] - qhat[2])))
         oo <- .C("INIT_noX", par = as.double(par), y = as.double(y), cens = as.integer(cens), wt = as.double(wt),
-        hyper = as.double(hyper), dim = as.integer(dimpars), gridpars = as.double(gridmats),
+        hyper = as.double(hyper.reduced), dim = as.integer(dimpars), gridpars = as.double(gridmats),
         tau.g = as.double(tau.g), siglim = as.double(sigFn.inv(c(1.0 * infl * sigma, 10 * infl * sigma), a.sig)),
         fbase.choice = as.integer(fbase.choice))
         par <- oo$par
@@ -464,17 +468,17 @@ qde <- function(y, nsamp = 1e3, thin = 10, cens = rep(0,length(y)), wt = rep(1,l
 		blocks.S <- unlist(blocks.S)
 	}
 		
-	imcmc.par <- c(nblocks, ref.size, TRUE, max(10, niter/1e4), rep(0, nblocks))
+	imcmc.par <- c(nblocks, ref.size, verbose, max(10, niter/1e4), rep(0, nblocks))
 	dmcmc.par <- c(temp, 0.999, rep(acpt.target, nblocks), 2.38 / sqrt(blocks.size))
 	
 	
 	tm.c <- system.time(oo <- .C("BQDE", par = as.double(par), y = as.double(y), cens = as.integer(cens), wt = as.double(wt),
-								 hyper = as.double(hyper), dim = as.integer(dimpars), gridmats = as.double(gridmats),
+								 hyper = as.double(hyper.reduced), dim = as.integer(dimpars), gridmats = as.double(gridmats),
 								 tau.g = as.double(tau.g), muV = as.double(blocks.mu), SV = as.double(blocks.S), blocks = as.integer(blocks.ix), 
 								 blocks.size = as.integer(blocks.size), dmcmcpar = as.double(dmcmc.par), 
 								 imcmcpar = as.integer(imcmc.par), parsamp = double(nsamp * length(par)), 
 								 acptsamp = double(nsamp * nblocks), lpsamp = double(nsamp), fbase.choice = as.integer(fbase.choice)))
-	cat("elapsed time:", round(tm.c[3]), "seconds\n")
+	if(verbose) cat("elapsed time:", round(tm.c[3]), "seconds\n")
 	
 	oo$y <- y; oo$gridmats <- gridmats; oo$prox <- prox.grid; oo$reg.ix <- reg.ix; oo$runtime <- tm.c[3]
 	class(oo) <- "qde"
@@ -591,18 +595,20 @@ coef.qrjoint <- function(object, burn.perc = 0.5, nmc = 200, plot = FALSE, show.
 	}	
 	names(beta.hat) <- plot.titles
     
-    parametric.list <- list(gam0 = pars[nknots * (p+1) + 1,ss],
-                            gam = pars[nknots * (p+1) + 1 + 1:p,ss],
-                            sigma = sigFn(pars[nknots * (p+1) + (p+1) + 1,ss], a.sig),
-                            nu = nuFn(pars[(nknots + 1) * (p+1) + 2,ss]))
+    mid.red <- which(tau.g == object$tau.g[mid])
+    parametric.list <- rbind(beta.samp[seq(mid.red, (p+1)*L, L), ],
+                             sigma = sigFn(pars[nknots * (p+1) + (p+1) + 1,ss], a.sig),
+                             nu = nuFn(pars[(nknots + 1) * (p+1) + 2,ss]))
 
-    gamsignu <- t(sapply(parametric.list, quantile, pr = c(0.5, 0.025, 0.975)))
+    dimnames(parametric.list)[[1]][1 + 0:p] <- c("Intercept", object$xnames)
+
+    gamsignu <- t(apply(parametric.list, 1, quantile, pr = c(0.5, 0.025, 0.975)))
     dimnames(gamsignu)[[2]] <- c("Estimate", "Lo95%", "Up95%")
     invisible(list(beta.samp = beta.samp, beta.est = beta.hat, parametric = gamsignu))
 }
 
 
-coef.qde <- function(object, burn.perc = 0.5, nmc = 200, reduce = TRUE){
+coef.qde <- function(object, burn.perc = 0.5, nmc = 200, reduce = TRUE, ...){
     niter <- object$dim[7]
     nsamp <- object$dim[9]
     pars <- matrix(object$parsamp, ncol = nsamp)
