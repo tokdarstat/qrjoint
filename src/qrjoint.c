@@ -355,9 +355,11 @@ double logpostFn_noX(double *par, double temp, int llonly, double *ll, double *p
           l++;
           QPos = Q0Pos[l];
         }
-        if(cens[i]){
+        if(cens[i]==1){ // for right censored data this is just log(probability of > tau = 1 - tau)
           ll[i] = log(1.0 - taugrid[mid + l]);
-        } else {
+        } else if (cens[i]==2){ // left censored data contribution
+               ll[i] = log(taugrid[mid + l -1]);				  
+          }else {
           if(l == L - mid - 1) {
             ll[i] = lf0tail(Q0tail(taugrid[L-2], nu) + (resLin[i] - QPosold)/sigmat1, nu) - log(sigmat1);
             //ll[i] = lf0tail(QPos + (resLin[i] - Q0Pos[l])/sigmat1, nu) - log(sigmat1);
@@ -375,9 +377,11 @@ double logpostFn_noX(double *par, double temp, int llonly, double *ll, double *p
           l++;
           QNeg = Q0Neg[l];
         }
-        if(cens[i]){
-          ll[i] = log(1.0 - taugrid[mid - l]);
-        } else {
+        if(cens[i]==1){
+          ll[i] = log(1.0 - taugrid[mid - l +1]); // right censored data contribution
+        } else if (cens[i]==2){  // left censored data contribution
+          ll[i] = log(taugrid[mid -l]);
+          }else {
           if(l == mid) {
             ll[i] = lf0tail(Q0tail(taugrid[1], nu) + (resLin[i] + QNegold)/sigmat2, nu) - log(sigmat2);
             //ll[i] = lf0tail(-QNeg + (resLin[i] + QNeg) / sigmat2, nu) - log(sigmat2);
@@ -417,7 +421,7 @@ double logpostFn_noX(double *par, double temp, int llonly, double *ll, double *p
 double logpostFn(double *par, double temp, int llonly, double *ll, double *pg){
 	
 	int i, j, l, reach = 0, reach2 = 0;
-	double w0max, zeta0tot, lps0, gam0, sigma, nu, QPos, QPosold, QNeg, QNegold, sigmat1, sigmat2, den0;
+  double w0max, zeta0tot, lps0, gam0, sigma, nu, QPos, QPosold, QNeg, QNegold, sigmat1, sigmat2, den0;
 	
 	lps0 = ppFn0(par, w0, pg);  // evaluate log posterior for the intercept contribution... here the w0 gets updated
 	reach += m;                 // increment over knots
@@ -532,11 +536,12 @@ double logpostFn(double *par, double temp, int llonly, double *ll, double *pg){
 							  ll[i] = lf0tail(Q0tail(taugrid[L-2],nu) + (resLin[i] - QPosold)/sigmat1,nu) - log(sigmat1);
 						    //ll[i] = lf0tail(Qpos + (resLin[i] - QPos)/sigmat1, nu) - log(sigmat1);
 						  // Otherwise estimate log (1/slope Q at tau) using the Q points that Y_i falls between & corresponding taus
-						  else
+						  else{
 						  //ll[i] = log(taugrid[mid+l] - taugrid[mid+l-1]) - log(QPos - QPosold);
 						  for(qdot_lo = b0dot[mid+l-1], j = 0; j < p; j++) qdot_lo += bdot[j][mid+l-1] * x[i][j];
 						  for(qdot_up = b0dot[mid+l], j = 0; j < p; j++) qdot_up += bdot[j][mid+l] * x[i][j];
 						  ll[i] = -log(part_trape(resLin[i], QPosold, qdot_lo, qdot_up, taugrid[mid+l] - taugrid[mid+l-1]));
+					    }
 					  }
 				} else {
 					l = 0; 
@@ -608,7 +613,6 @@ void BQDE(double *par, double *yVar, int *status, double *weights, double *hyper
   int i, k, l;
     
   int reach = 0;
-  shrink = toShrink[0];
   n = dim[reach++]; p = 0; L = dim[reach++]; mid = dim[reach++];
   m = dim[reach++]; ngrid = dim[reach++]; nkap = dim[reach++];
   dist = distribution[0];
@@ -898,10 +902,83 @@ double *par0;
 
 // Shortened evaluation of logpostFn; defaults to temp==1, exclusion of prior on nu
 // Function to be maximized over sigma when finding starting sigma values
-double lpFn2(double sigma){
-	par0[sig_pos] = sigma;
-	return logpostFn(par0, 1.0, 0, llvec, pgvec);
+double lpFn2_noX(double sigma){
+  par0[sig_pos] = sigma;
+  return logpostFn_noX(par0, 1.0, 0, llvec, pgvec);
 }
+double lpFn2(double sigma){
+  par0[sig_pos] = sigma;
+  return logpostFn(par0, 1.0, 0, llvec, pgvec);
+}
+
+
+void INIT_noX(double *par, double *yVar, int *status, double *weights, double *hyper, int *dim, double *gridpars, double *tauG, double *siglim, int *distribution){
+  
+  int i, k, l;
+  
+  int reach = 0;
+  n = dim[reach++]; p = 0; L = dim[reach++]; mid = dim[reach++];
+  m = dim[reach++]; ngrid = dim[reach++]; nkap = dim[reach++];
+  dist = distribution[0];
+  
+  taugrid = tauG;
+  asig = hyper[0]; bsig = hyper[1];
+  akap = vect(nkap); bkap = vect(nkap); lpkap = vect(nkap);
+  for(reach = 2, i = 0; i < nkap; i++){
+    akap[i] = hyper[reach++];
+    bkap[i] = hyper[reach++];
+    lpkap[i] = hyper[reach++];
+  }
+  
+  reach = 0;
+  Agrid = (double ***)R_alloc(ngrid, sizeof(double **));
+  Rgrid = (double ***)R_alloc(ngrid, sizeof(double **));
+  ldRgrid = vect(ngrid);
+  lpgrid = vect(ngrid);
+  
+  for(i = 0; i < ngrid; i++){
+    Agrid[i] = mymatrix(L, m);
+    for(l = 0; l < L; l++) for(k = 0; k < m; k++) Agrid[i][l][k] = gridpars[reach++];
+    
+    Rgrid[i] = mymatrix(m, m);
+    for(k = 0; k < m; k++) for(l = 0; l < m; l++) Rgrid[i][l][k] = gridpars[reach++];
+    
+    ldRgrid[i] = gridpars[reach++];
+    lpgrid[i] = gridpars[reach++];
+  }
+  
+  y = yVar;
+  cens = status;
+  wt = weights;
+  
+  lb = vect(10);
+  wgrid = mymatrix(ngrid, L);
+  lw = vect(nkap);
+  llgrid = vect(ngrid);
+  zknot = vect(m);
+  w0 = vect(L);
+  zeta0dot = vect(L);
+  zeta0 = vect(L);
+  resLin = vect(n);
+  b0dot = vect(L);
+  Q0Pos = vect(L);
+  Q0Neg = vect(L);
+  llvec = vect(n);
+  pgvec = vect(ngrid*(p+1));
+  zeta0_tick = ivect(L);
+  zeta0_dist = vect(L);
+  
+  sig_pos = m+1;
+  par0 = par;
+  
+  double sig_a = siglim[0], sig_b = siglim[1];	
+  double fa = lpFn2_noX(sig_a);
+  double fb = lpFn2_noX(sig_b);
+  
+  Max_Search_Golden_Section(lpFn2_noX, &sig_a, &fa, &sig_b, &fb, 1.0e-5);
+  par[sig_pos] = (sig_a + sig_b) / 2.0;
+}
+
 
 // Initialization function
 // Performs many of same unpacking functionalities that BJQR does but additionally
@@ -999,6 +1076,70 @@ void INIT(double *par, double *xVar, double *yVar, int *status, double *weights,
 //----------------------------------------------------------------------------//
 //----------------Functions for post MCMC evaluation of Deviance--------------//
 
+
+void DEV_noX(double *par, double *yVar, int *status, double *weights, double *hyper, int *dim, double *gridpars, double *tauG, double *devsamp, double *llsamp, double *pgsamp){
+  
+  int i, k, l;
+  
+  int reach = 0;
+  n = dim[reach++]; p = 0; L = dim[reach++]; mid = dim[reach++];
+  m = dim[reach++]; ngrid = dim[reach++]; nkap = dim[reach++];
+  int niter = dim[reach++], npar = (m+1) + 2;
+  
+  reach = 0;
+  taugrid = tauG;
+  asig = hyper[0]; bsig = hyper[1];
+  akap = vect(nkap); bkap = vect(nkap); lpkap = vect(nkap);
+  for(reach = 2, i = 0; i < nkap; i++){
+    akap[i] = hyper[reach++];
+    bkap[i] = hyper[reach++];
+    lpkap[i] = hyper[reach++];
+  }
+  
+  reach = 0;
+  Agrid = (double ***)R_alloc(ngrid, sizeof(double **));
+  Rgrid = (double ***)R_alloc(ngrid, sizeof(double **));
+  ldRgrid = vect(ngrid);
+  lpgrid = vect(ngrid);
+  
+  for(i = 0; i < ngrid; i++){
+    Agrid[i] = mymatrix(L, m);
+    for(l = 0; l < L; l++) for(k = 0; k < m; k++) Agrid[i][l][k] = gridpars[reach++];
+    
+    Rgrid[i] = mymatrix(m, m);
+    for(k = 0; k < m; k++) for(l = 0; l < m; l++) Rgrid[i][l][k] = gridpars[reach++];
+    
+    ldRgrid[i] = gridpars[reach++];
+    lpgrid[i] = gridpars[reach++];
+  }
+  
+  y = yVar;
+  cens = status;
+  wt = weights;
+  
+  lb = vect(10);
+  wgrid = mymatrix(ngrid, L);
+  lw = vect(nkap);
+  llgrid = vect(ngrid);
+  zknot = vect(m);
+  w0 = vect(L);
+  zeta0dot = vect(L);
+  zeta0 = vect(L);
+  resLin = vect(n);
+  b0dot = vect(L);
+  Q0Pos = vect(L);
+  Q0Neg = vect(L);
+  zeta0_tick = ivect(L);
+  zeta0_dist = vect(L);
+  
+  reach = 0;
+  int iter, reach2 = 0, reach3 = 0;
+  for(iter = 0; iter < niter; iter++){
+    devsamp[iter] = -2.0 * logpostFn_noX(par + reach, 1.0, 1, llsamp + reach2, pgsamp + reach3);
+    reach += npar; reach2 += n; reach3 += ngrid;
+  }
+}
+
 // Function to calculate post-hoc the Deviance at each iteration; 
 // called within the summary.qrjoint function in R
 void DEV(double *par, double *xVar, double *yVar, int *status, double *weights, int *toShrink, double *hyper, int *dim, double *gridpars, double *tauG, double *devsamp, double *llsamp, double *pgsamp){
@@ -1079,6 +1220,69 @@ void DEV(double *par, double *xVar, double *yVar, int *status, double *weights, 
 	}
 }
 
+void PRED_noX(double *par, double *yGrid, double *hyper, int *dim, double *gridpars, double *tauG, double *logdenssamp){
+  
+  int i, k, l;
+  
+  int reach = 0;
+  n = dim[reach++]; p = 0; L = dim[reach++]; mid = dim[reach++];
+  m = dim[reach++]; ngrid = dim[reach++]; nkap = dim[reach++];
+  int niter = dim[reach++], npar = (m+1) + 2;
+  
+  reach = 0;
+  taugrid = tauG;
+  asig = hyper[0]; bsig = hyper[1];
+  akap = vect(nkap); bkap = vect(nkap); lpkap = vect(nkap);
+  for(reach = 2, i = 0; i < nkap; i++){
+    akap[i] = hyper[reach++];
+    bkap[i] = hyper[reach++];
+    lpkap[i] = hyper[reach++];
+  }
+  
+  reach = 0;
+  Agrid = (double ***)R_alloc(ngrid, sizeof(double **));
+  Rgrid = (double ***)R_alloc(ngrid, sizeof(double **));
+  ldRgrid = vect(ngrid);
+  lpgrid = vect(ngrid);
+  
+  for(i = 0; i < ngrid; i++){
+    Agrid[i] = mymatrix(L, m);
+    for(l = 0; l < L; l++) for(k = 0; k < m; k++) Agrid[i][l][k] = gridpars[reach++];
+    
+    Rgrid[i] = mymatrix(m, m);
+    for(k = 0; k < m; k++) for(l = 0; l < m; l++) Rgrid[i][l][k] = gridpars[reach++];
+    
+    ldRgrid[i] = gridpars[reach++];
+    lpgrid[i] = gridpars[reach++];
+  }
+  
+  y = yGrid;
+  cens = ivect(n); for(i = 0; i < n; i++) cens[i] = 0;
+  wt = vect(n); for(i = 0; i < n; i++) wt[i] = 1.0;
+  
+  lb = vect(10);
+  wgrid = mymatrix(ngrid, L);
+  lw = vect(nkap);
+  llgrid = vect(ngrid);
+  zknot = vect(m);
+  w0 = vect(L);
+  zeta0dot = vect(L);
+  zeta0 = vect(L);
+  resLin = vect(n);
+  b0dot = vect(L);
+  Q0Pos = vect(L);
+  Q0Neg = vect(L);
+  zeta0_tick = ivect(L);
+  zeta0_dist = vect(L);
+  
+  reach = 0;
+  double lldummy, *pgdummy = vect(ngrid);
+  int iter, reach2 = 0, reach3 = 0;
+  for(iter = 0; iter < niter; iter++){
+    lldummy = logpostFn_noX(par + reach, 1.0, 1, logdenssamp + reach2, pgdummy);
+    reach += npar; reach2 += n; reach3 += ngrid;
+  }
+}
 
 
 //----------------------------------------------------------------------------//
@@ -1584,7 +1788,7 @@ void adMCMC(int niter, int thin, int npar, double *par, double **mu, double ***S
 	for(b = 0; b < nblocks; b++){
 		R[b] = mymatrix(blocks_size[b], blocks_size[b]);
 		blocks_pivot[b] = ivect(blocks_size[b]);
-		chol(R[b], blocks_size[b], 0.0, blocks_pivot[b], blocks_rank + b, blocks_size[b], blocks_d, S[b], 0, 0, 1.0e-10);
+		chol(R[b], blocks_size[b], 1.0e-8, blocks_pivot[b], blocks_rank + b, blocks_size[b], blocks_d, S[b], 0, 0, 1.0e-10);
 	}
 	
 	// Reserve memory (via pointers) for
@@ -1673,7 +1877,7 @@ void adMCMC(int niter, int thin, int npar, double *par, double **mu, double ***S
 					}
 					S[b][i][i] = (1.0 - frac[b]) * S[b][i][i] + frac[b] * (parbar_chunk[b][i] - mu[b][i]) * (parbar_chunk[b][i] - mu[b][i]);
 				}
-				chol(R[b], blocks_size[b], 0.0, blocks_pivot[b], blocks_rank + b, blocks_size[b], blocks_d, S[b], 0, 0, 1.0e-10);
+				chol(R[b], blocks_size[b], 1.0e-8, blocks_pivot[b], blocks_rank + b, blocks_size[b], blocks_d, S[b], 0, 0, 1.0e-10);
 				for(i = 0; i < blocks_size[b]; i++) mu[b][i] += frac[b] * (parbar_chunk[b][i] - mu[b][i]);
 				lm[b] *= exp(frac[b] * (acpt_chunk[b] - acpt_target[b]));
 				acpt_chunk[b] = 0.0;
@@ -1690,4 +1894,9 @@ void adMCMC(int niter, int thin, int npar, double *par, double **mu, double ***S
 void transform_grid(double *w, double *v, int *ticks, double *dists){
     int l;
     for(l = 0; l < L; l++) v[l] = (1.0 - dists[l]) * w[ticks[l]] + dists[l] * w[ticks[l]+1];
+}
+
+double part_trape(double target, double baseline, double a, double b, double Delta){
+  double h = (-a*Delta + sqrt(a*a * Delta*Delta + 2*Delta*(b-a)*(target - baseline)))/((b-a)*Delta);
+  return ((1.0 - h)*a + h*b);
 }
