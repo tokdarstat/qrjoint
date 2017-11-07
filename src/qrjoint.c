@@ -205,11 +205,11 @@ double lf0tail(double x, double nu){
     switch (dist) {
         case 2:
             //val = dunif(x, -1.0, 1.0, 1);
-            //val = dt(x, 0.1, 1);  
+            //val = dt(x, 0.1, 1);
             val = dt(x, nu, 1);   // dt(value, df, 1=log)
             break;
         default:
-            //val = dt(x, 0.1, 1); 
+            //val = dt(x, 0.1, 1);
             val = dt(x, nu, 1);  // dt(value, df, 1=log)
             break;
     }
@@ -277,105 +277,6 @@ double ppFn0(double *wknot, double *w, double *postgrid){
 	return lps;
 }	
 
-double logpostFn_noX(double *par, double temp, int llonly, double *ll, double *pg){
-      
-      int i, l, reach = 0, reach2 = 0;
-      double w0max, zeta0tot, lps0, gam0, sigma, nu, QPos, QPosold, QNeg, QNegold, sigmat1, sigmat2, den0;
-      
-      lps0 = ppFn0(par, w0, pg);
-      reach += m;
-      reach2 += ngrid;
-      
-      w0max = vmax(w0, L);
-      for(l = 0; l < L; l++) zeta0dot[l] = exp(w0[l] - w0max);
-      trape(zeta0dot + 1, taugrid + 1, L-2, zeta0 + 1, 0);
-      zeta0tot = zeta0[L-2];
-      zeta0[0] = 0.0; zeta0[L-1] = 1.0;
-      for(l = 1; l < L-1; l++) zeta0[l] = taugrid[1] + (taugrid[L-2] - taugrid[1]) * zeta0[l] / zeta0tot;
-      zeta0dot[0] = 0.0; zeta0dot[L-1] = 0.0;
-      for(l = 1; l < L-1; l++) zeta0dot[l] = (taugrid[L-2] - taugrid[1]) * zeta0dot[l] / zeta0tot;
-      
-      if(temp > 0.0){
-          for(i = 0; i < n; i++) ll[i] = log(0.0);
-          
-          gam0 = par[reach++];
-          sigma = sigFn(par[reach++]);
-          nu = nuFn(par[reach++]);
-          //Rprintf("sigma = %g, nu = %g\n", sigma, nu);
-          
-          for(i = 0; i < n; i++) resLin[i] = y[i] - gam0;
-          //Rprintvec("resLin = ", "%g ", resLin, n);
-          
-          for(l = 0; l < L; l++) b0dot[l] = sigma * q0(zeta0[l], nu) * zeta0dot[l];
-          
-          trape(b0dot + mid, taugrid + mid, L - mid, Q0Pos, 0); Q0Pos[L-mid] = qt(1.0, 1.0, 1, 0);
-          trape(b0dot + mid, taugrid + mid, mid + 1, Q0Neg, 1); Q0Neg[mid+1] = qt(1.0, 1.0, 1, 0);
-          //Rprintvec("Q0Pos = ", "%g ", Q0Pos, L - mid + 1);
-          //Rprintvec("Q0Neg = ", "%g ", Q0Neg, mid + 2);
-          
-          sigmat1 = sigmat2 = sigma;
-          
-          for(i = 0; i < n; i++){
-              if(resLin[i] == 0.0){
-                  den0 = b0dot[mid];
-                  ll[i] = -log(den0);
-              } else if(resLin[i] > 0.0){
-                  l = 0;
-                  QPosold = 0.0;
-                  QPos = Q0Pos[l];
-                  while(resLin[i] > QPos && l < L-mid-1){
-                      QPosold = QPos;
-                      l++;
-                      QPos = Q0Pos[l];
-                  }
-                  if(cens[i]){
-                      ll[i] = log(1.0 - taugrid[mid + l]);
-                  } else {
-                      if(l == L - mid - 1) {
-                          ll[i] = lf0tail(Q0tail(taugrid[L-2], nu) + (resLin[i] - QPosold)/sigmat1, nu) - log(sigmat1);
-                          //ll[i] = lf0tail(QPos + (resLin[i] - Q0Pos[l])/sigmat1, nu) - log(sigmat1);
-                      } else {
-                          //ll[i] = log(taugrid[mid+l] - taugrid[mid+l-1]) - log(QPos - QPosold);
-                          ll[i] = -log(part_trape(resLin[i], QPosold, b0dot[mid+l-1], b0dot[mid+l], taugrid[mid+l] - taugrid[mid+l-1]));
-                      }
-                  }
-              } else {
-                  l = 0;
-                  QNegold = 0.0;
-                  QNeg = Q0Neg[l];
-                  while(resLin[i] < -QNeg && l < mid){
-                      QNegold = QNeg;
-                      l++;
-                      QNeg = Q0Neg[l];
-                  }
-                  if(cens[i]){
-                      ll[i] = log(1.0 - taugrid[mid - l]);
-                  } else {
-                      if(l == mid) {
-                          ll[i] = lf0tail(Q0tail(taugrid[1], nu) + (resLin[i] + QNegold)/sigmat2, nu) - log(sigmat2);
-                          //ll[i] = lf0tail(-QNeg + (resLin[i] + QNeg) / sigmat2, nu) - log(sigmat2);
-                      } else {
-                          //ll[i] = log(taugrid[mid-l+1]-taugrid[mid-l]) - log(QNeg - QNegold);
-                          ll[i] = -log(part_trape(-resLin[i], QNegold, b0dot[mid-l+1], b0dot[mid-l], taugrid[mid-l+1] - taugrid[mid-l]));
-                      }
-                  }
-              }
-              if(ll[i] == qt(1.0, 1.0, 1, 0)) Rprintf("i = %d, ll[i] = %g, resLin[i] = %g, l = %d\n", i, ll[i], resLin[i], l);
-          }
-      } else {
-          for(i = 0; i < n; i++) ll[i] = 0.0;
-      }
-      //Rprintvec("ll = ", "%g ", ll, n);
-      double lp = temp * inprod(ll, wt, n);
-      
-      if(!llonly){
-          //lp += lps0 + dt(par[m*(p+1)], 1.0, 1) + dlogis(par[(m+1)*(p+1)], 0.0, 1.0, 1) + dlogis(par[(m+1)*(p+1)+1], 0.0, 1.0, 1);
-          //lp += lps0 + dlogis(par[(m+1)*(p+1)], 0.0, 1.0, 1) + dlogis(par[(m+1)*(p+1)+1], 0.0, 1.0, 1);
-          lp += lps0 + dlogis(par[m+2], 0.0, 1.0, 1);
-          //else lp -= 0.5*sumsquares(par + m*(p+1) + 1, p)/9.0;
-      }	
-      return lp;
-  }
 
 // Another function for obtaining part of the log likelihood; this one similar
 // to previous function but determines contributions of each covariate over grid
@@ -402,6 +303,107 @@ double ppFn(double *wknot, double *w, double *postgrid){
 	for(l = 0; l < L; l++) for(w[l] = 0.0, i = 0; i < ngrid; i++) w[l] += wgrid[i][l] * postgrid[i];
 	return lps;
 }	
+
+double logpostFn_noX(double *par, double temp, int llonly, double *ll, double *pg){
+  
+  int i, l, reach = 0, reach2 = 0;
+  double w0max, zeta0tot, lps0, gam0, sigma, nu, QPos, QPosold, QNeg, QNegold, sigmat1, sigmat2, den0;
+  
+  lps0 = ppFn0(par, w0, pg);
+  reach += m;
+  reach2 += ngrid;
+  
+  w0max = vmax(w0, L);
+  for(l = 0; l < L; l++) zeta0dot[l] = exp(w0[l] - w0max);
+  trape(zeta0dot + 1, taugrid + 1, L-2, zeta0 + 1, 0);
+  zeta0tot = zeta0[L-2];
+  zeta0[0] = 0.0; zeta0[L-1] = 1.0;
+  for(l = 1; l < L-1; l++) zeta0[l] = taugrid[1] + (taugrid[L-2] - taugrid[1]) * zeta0[l] / zeta0tot;
+  zeta0dot[0] = 0.0; zeta0dot[L-1] = 0.0;
+  for(l = 1; l < L-1; l++) zeta0dot[l] = (taugrid[L-2] - taugrid[1]) * zeta0dot[l] / zeta0tot;
+  
+  if(temp > 0.0){
+    for(i = 0; i < n; i++) ll[i] = log(0.0);
+    
+    gam0 = par[reach++];
+    sigma = sigFn(par[reach++]);
+    nu = nuFn(par[reach++]);
+    //Rprintf("sigma = %g, nu = %g\n", sigma, nu);
+    
+    for(i = 0; i < n; i++) resLin[i] = y[i] - gam0;
+    //Rprintvec("resLin = ", "%g ", resLin, n);
+    
+    for(l = 0; l < L; l++) b0dot[l] = sigma * q0(zeta0[l], nu) * zeta0dot[l];
+    
+    trape(b0dot + mid, taugrid + mid, L - mid, Q0Pos, 0); Q0Pos[L-mid] = qt(1.0, 1.0, 1, 0);
+    trape(b0dot + mid, taugrid + mid, mid + 1, Q0Neg, 1); Q0Neg[mid+1] = qt(1.0, 1.0, 1, 0);
+    //Rprintvec("Q0Pos = ", "%g ", Q0Pos, L - mid + 1);
+    //Rprintvec("Q0Neg = ", "%g ", Q0Neg, mid + 2);
+    
+    sigmat1 = sigmat2 = sigma;
+    
+    for(i = 0; i < n; i++){
+      if(resLin[i] == 0.0){
+        den0 = b0dot[mid];
+        ll[i] = -log(den0);
+      } else if(resLin[i] > 0.0){
+        l = 0;
+        QPosold = 0.0;
+        QPos = Q0Pos[l];
+        while(resLin[i] > QPos && l < L-mid-1){
+          QPosold = QPos;
+          l++;
+          QPos = Q0Pos[l];
+        }
+        if(cens[i]){
+          ll[i] = log(1.0 - taugrid[mid + l]);
+        } else {
+          if(l == L - mid - 1) {
+            ll[i] = lf0tail(Q0tail(taugrid[L-2], nu) + (resLin[i] - QPosold)/sigmat1, nu) - log(sigmat1);
+            //ll[i] = lf0tail(QPos + (resLin[i] - Q0Pos[l])/sigmat1, nu) - log(sigmat1);
+          } else {
+            //ll[i] = log(taugrid[mid+l] - taugrid[mid+l-1]) - log(QPos - QPosold);
+            ll[i] = -log(part_trape(resLin[i], QPosold, b0dot[mid+l-1], b0dot[mid+l], taugrid[mid+l] - taugrid[mid+l-1]));
+          }
+        }
+      } else {
+        l = 0;
+        QNegold = 0.0;
+        QNeg = Q0Neg[l];
+        while(resLin[i] < -QNeg && l < mid){
+          QNegold = QNeg;
+          l++;
+          QNeg = Q0Neg[l];
+        }
+        if(cens[i]){
+          ll[i] = log(1.0 - taugrid[mid - l]);
+        } else {
+          if(l == mid) {
+            ll[i] = lf0tail(Q0tail(taugrid[1], nu) + (resLin[i] + QNegold)/sigmat2, nu) - log(sigmat2);
+            //ll[i] = lf0tail(-QNeg + (resLin[i] + QNeg) / sigmat2, nu) - log(sigmat2);
+          } else {
+            //ll[i] = log(taugrid[mid-l+1]-taugrid[mid-l]) - log(QNeg - QNegold);
+            ll[i] = -log(part_trape(-resLin[i], QNegold, b0dot[mid-l+1], b0dot[mid-l], taugrid[mid-l+1] - taugrid[mid-l]));
+          }
+        }
+      }
+      if(ll[i] == qt(1.0, 1.0, 1, 0)) Rprintf("i = %d, ll[i] = %g, resLin[i] = %g, l = %d\n", i, ll[i], resLin[i], l);
+    }
+  } else {
+    for(i = 0; i < n; i++) ll[i] = 0.0;
+  }
+  //Rprintvec("ll = ", "%g ", ll, n);
+  double lp = temp * inprod(ll, wt, n);
+  
+  if(!llonly){
+    //lp += lps0 + dt(par[m*(p+1)], 1.0, 1) + dlogis(par[(m+1)*(p+1)], 0.0, 1.0, 1) + dlogis(par[(m+1)*(p+1)+1], 0.0, 1.0, 1);
+    //lp += lps0 + dlogis(par[(m+1)*(p+1)], 0.0, 1.0, 1) + dlogis(par[(m+1)*(p+1)+1], 0.0, 1.0, 1);
+    lp += lps0 + dlogis(par[m+2], 0.0, 1.0, 1);
+    //else lp -= 0.5*sumsquares(par + m*(p+1) + 1, p)/9.0;
+  }	
+  return lp;
+}
+
 
 // Function for evaluating the log posterior (case for log-likelihood only)
 // Arguments/Inputs/Outputs
@@ -500,6 +502,7 @@ double logpostFn(double *par, double temp, int llonly, double *ll, double *pg){
 			//sigmat2 = sigma * q0(taugrid[1],nu) / q0tail(taugrid[1]);
 			sigmat1 = sigmat2 = sigma;
 			
+			double qdot_lo = 0.0, qdot_up = 0.0;
 			for(i = 0; i < n; i++){  // add in contributions from each observation
 				if(resLin[i] == 0.0){  // case Y_i=median data quantile
 					for(den0 = b0dot[mid], j = 0; j < p; j++) den0 += x[i][j] * bdot[j][mid];
@@ -526,10 +529,14 @@ double logpostFn(double *par, double temp, int llonly, double *ll, double *pg){
 					  }else {
 					    // for tails, ll contribution comes from heavy-tail t distribution
 						  if(l == L - mid - 1) 
-							  ll[i] = lf0tail(Q0tail(taugrid[L-2]) + (resLin[i] - QPos)/sigmat1) - log(sigmat1);
+							  ll[i] = lf0tail(Q0tail(taugrid[L-2],nu) + (resLin[i] - QPosold)/sigmat1,nu) - log(sigmat1);
+						    //ll[i] = lf0tail(Qpos + (resLin[i] - QPos)/sigmat1, nu) - log(sigmat1);
 						  // Otherwise estimate log (1/slope Q at tau) using the Q points that Y_i falls between & corresponding taus
 						  else
-							ll[i] = log(taugrid[mid+l] - taugrid[mid+l-1]) - log(QPos - QPosold);
+						  //ll[i] = log(taugrid[mid+l] - taugrid[mid+l-1]) - log(QPos - QPosold);
+						  for(qdot_lo = b0dot[mid+l-1], j = 0; j < p; j++) qdot_lo += bdot[j][mid+l-1] * x[i][j];
+						  for(qdot_up = b0dot[mid+l], j = 0; j < p; j++) qdot_up += bdot[j][mid+l] * x[i][j];
+						  ll[i] = -log(part_trape(resLin[i], QPosold, qdot_lo, qdot_up, taugrid[mid+l] - taugrid[mid+l-1]));
 					  }
 				} else {
 					l = 0; 
@@ -547,9 +554,15 @@ double logpostFn(double *par, double temp, int llonly, double *ll, double *pg){
 					  ll[i] = log(taugrid[mid -l]);
 					  }else {
 						  if(l == mid)
-							  ll[i] = lf0tail(Q0tail(taugrid[1]) + (resLin[i] + QNeg)/sigmat2) - log(sigmat2);
-						  else
-							  ll[i] = log(taugrid[mid-l+1]-taugrid[mid-l]) - log(QNeg - QNegold);
+						    ll[i] = lf0tail(Q0tail(taugrid[1], nu) + (resLin[i] + QNegold)/sigmat2, nu) - log(sigmat2);
+						    //ll[i] = lf0tail(-QNeg + (resLin[i] + QNeg)/sigmat2, nu) - log(sigmat2);
+							  //ll[i] = lf0tail(Q0tail(taugrid[1]) + (resLin[i] + QNeg)/sigmat2) - log(sigmat2);
+						  else{
+						    //ll[i] = log(taugrid[mid-l+1]-taugrid[mid-l]) - log(QNeg - QNegold);
+						    for(qdot_lo = b0dot[mid-l+1], j = 0; j < p; j++) qdot_lo += bdot[j][mid-l+1] * x[i][j];
+						    for(qdot_up = b0dot[mid-l], j = 0; j < p; j++) qdot_up += bdot[j][mid-l] * x[i][j];
+						    ll[i] = -log(part_trape(-resLin[i], QNegold, qdot_lo, qdot_up, taugrid[mid-l+1] - taugrid[mid-l]));
+						  }
 					  }
 				}			
 				if(ll[i] == qt(1.0, 1.0, 1, 0)) Rprintf("i = %d, ll[i] = %g, resLin[i] = %g, l = %d\n", i, ll[i], resLin[i], l);
@@ -575,6 +588,10 @@ double logpostFn(double *par, double temp, int llonly, double *ll, double *pg){
 // Define global pointers
 double *llvec, *pgvec;
 
+double lpFn_noX(double *par, double temp){
+  return logpostFn_noX(par, temp, 0, llvec, pgvec);
+}
+
 // Shortened evaluation of logpostFn; defaults to inclusion of prior on nu
 double lpFn(double *par, double temp){
 	return logpostFn(par, temp, 0, llvec, pgvec);
@@ -584,6 +601,93 @@ double lpFn(double *par, double temp){
 double lpFn1(double *par, double *pgvec){
 	return logpostFn(par, 1.0, 1, llvec, pgvec);
 }
+
+//---------Function for performing Bayesian Quantile Density Estimation--------//
+void BQDE(double *par, double *yVar, int *status, double *weights, double *hyper, int *dim, double *gridpars, double *tauG, double *muVar, double *SVar, int *blocksVar, int *blocks_size, double *dmcmcpar, int *imcmcpar, double *parsamp, double *acptsamp, double *lpsamp, int *distribution){
+  
+  int i, k, l;
+    
+  int reach = 0;
+  shrink = toShrink[0];
+  n = dim[reach++]; p = 0; L = dim[reach++]; mid = dim[reach++];
+  m = dim[reach++]; ngrid = dim[reach++]; nkap = dim[reach++];
+  dist = distribution[0];
+  int niter = dim[reach++], thin = dim[reach++], npar = m+3;
+  taugrid = tauG;
+    
+  asig = hyper[0]; bsig = hyper[1];
+  akap = vect(nkap); bkap = vect(nkap); lpkap = vect(nkap);
+  for(reach = 2, i = 0; i < nkap; i++){
+      akap[i] = hyper[reach++];
+      bkap[i] = hyper[reach++];
+      lpkap[i] = hyper[reach++];
+  }
+    
+  reach = 0;
+  Agrid = (double ***)R_alloc(ngrid, sizeof(double **));
+  Rgrid = (double ***)R_alloc(ngrid, sizeof(double **));
+  ldRgrid = vect(ngrid);
+  lpgrid = vect(ngrid);
+  
+  for(i = 0; i < ngrid; i++){
+      Agrid[i] = mymatrix(L, m);
+      for(l = 0; l < L; l++) for(k = 0; k < m; k++) Agrid[i][l][k] = gridpars[reach++];
+        
+      Rgrid[i] = mymatrix(m, m);
+      for(k = 0; k < m; k++) for(l = 0; l < m; l++) Rgrid[i][l][k] = gridpars[reach++];
+        
+      ldRgrid[i] = gridpars[reach++];
+      lpgrid[i] = gridpars[reach++];
+  }
+    
+  y = yVar;
+  cens = status;
+  wt = weights;
+  
+  lb = vect(10);
+  wgrid = mymatrix(ngrid, L);
+  lw = vect(nkap);
+  llgrid = vect(ngrid);
+  zknot = vect(m);
+  w0 = vect(L);
+  zeta0dot = vect(L);
+  zeta0 = vect(L);
+  resLin = vect(n);
+  b0dot = vect(L);
+  Q0Pos = vect(L);
+  Q0Neg = vect(L);
+  llvec = vect(n);
+  pgvec = vect(ngrid);
+  zeta0_tick = ivect(L);
+  zeta0_dist = vect(L);
+  
+  int b;
+  int nblocks = imcmcpar[0], refresh = imcmcpar[1], verbose = imcmcpar[2], ticker = imcmcpar[3];
+  int *refresh_counter = imcmcpar + 4;
+  
+  double temp = dmcmcpar[0], decay = dmcmcpar[1];
+  double *acpt_target = dmcmcpar + 2, *lm = dmcmcpar + 2 + nblocks;
+  
+  double **mu = (double **)R_alloc(nblocks, sizeof(double *));
+  double ***S = (double ***)R_alloc(nblocks, sizeof(double **));
+  int **blocks = (int **)R_alloc(nblocks, sizeof(int *));
+  
+  int mu_point = 0, S_point = 0, blocks_point = 0;
+  for(b = 0; b < nblocks; b++){
+      mu[b] = muVar + mu_point; mu_point += blocks_size[b];
+      S[b] = (double **)R_alloc(blocks_size[b], sizeof(double *));
+      for(i = 0; i < blocks_size[b]; i++){
+          S[b][i] = SVar + S_point;
+          S_point += blocks_size[b];
+      }
+      blocks[b] = blocksVar + blocks_point; blocks_point += blocks_size[b];
+  }
+  adMCMC(niter, thin, npar, par, mu, S, acpt_target, decay, refresh, lm, temp, 
+                     nblocks, blocks, blocks_size, refresh_counter, verbose, ticker, 
+                     lpFn, parsamp, acptsamp, lpsamp);
+              
+}
+
 
 //---------Function for performing Bayesian Joint Quantile Regression--------//
 
