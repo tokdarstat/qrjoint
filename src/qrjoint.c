@@ -39,7 +39,10 @@ void adMCMC(int niter, int thin, int npar, double *par, double **mu, double ***S
 			int *refresh_counter, int verbose, int ticker, double lpFn(double *, double), 
 			double *parsamp, double *acptsamp, double *lpsamp);
 void transform_grid(double *w, double *v, int *ticks, double *dists);
-double part_trape(double target, double baseline, double a, double b, double Delta);
+
+double find_tau_lo(double target, double baseline, double a, double b, double taua, double taub);
+double find_tau_up(double target, double baseline, double a, double b, double taua, double taub);
+double part_trape_tt(double loc, double a, double b, double taua, double taub);
 
 //global integers; Memory allocated in R via R_alloc
 int n, p, L, mid, m, nkap, ngrid, shrink, dist;
@@ -303,7 +306,7 @@ double ppFn(double *wknot, double *w, double *postgrid){
 	return lps;
 }
 
-double logpostFn_noX(double *par, double temp, int llonly, double *ll, double *pg){
+double logpostFn_noX(double *par, double temp, int llonly, double *ll, double *pg, double *tt){
     
     int i, l, reach = 0, reach2 = 0;
     double w0max, zeta0tot, lps0, gam0, sigma, nu, QPos, QPosold, QNeg, QNegold, sigmat1, sigmat2, den0;
@@ -322,7 +325,10 @@ double logpostFn_noX(double *par, double temp, int llonly, double *ll, double *p
     for(l = 1; l < L-1; l++) zeta0dot[l] = (taugrid[L-2] - taugrid[1]) * zeta0dot[l] / zeta0tot;
     
     if(temp > 0.0){
-        for(i = 0; i < n; i++) ll[i] = log(0.0);
+        for(i = 0; i < n; i++) {
+          ll[i] = log(0.0);
+          tt[i] = taugrid[mid];
+        }
         
         gam0 = par[reach++];
         sigma = sigFn(par[reach++]);
@@ -341,6 +347,7 @@ double logpostFn_noX(double *par, double temp, int llonly, double *ll, double *p
         
         sigmat1 = sigmat2 = sigma;
         
+        //double h=0.5;
         for(i = 0; i < n; i++){
             if(resLin[i] == 0.0){
                 den0 = b0dot[mid];
@@ -354,17 +361,26 @@ double logpostFn_noX(double *par, double temp, int llonly, double *ll, double *p
                     l++;
                     QPos = Q0Pos[l];
                 }
-                if(cens[i]==1){ // for right censored data this is just log(probability of > tau = 1 - tau)
-                  ll[i] = log(1.0 - taugrid[mid + l]);
-                } else if (cens[i]==2){ // left censored data contribution
-                        ll[i] = log(taugrid[mid + l - 1]);
-                } else {
-                    if(l == L - mid - 1) {
-                        ll[i] = lf0tail(Q0tail(taugrid[L-2], nu) + (resLin[i] - QPosold)/sigmat1, nu) - log(sigmat1);
-                        //ll[i] = lf0tail(QPos + (resLin[i] - Q0Pos[l])/sigmat1, nu) - log(sigmat1);
+                if(l == L - mid - 1) {
+                    tt[i] = F0(Q0tail(taugrid[L-2], nu) + (resLin[i] - QPosold)/sigmat1, nu) ;
+                    if(cens[i]>0){
+                        if(cens[i]==1){
+                          ll[i] = log(1.0 - tt[i]); 
+                        } else {
+                          ll[i] = log(tt[i]);		
+                        }
                     } else {
-                        //ll[i] = log(taugrid[mid+l] - taugrid[mid+l-1]) - log(QPos - QPosold);
-                        ll[i] = -log(part_trape(resLin[i], QPosold, b0dot[mid+l-1], b0dot[mid+l], taugrid[mid+l] - taugrid[mid+l-1]));
+                      ll[i] = lf0tail(Q0tail(taugrid[L-2], nu) + (resLin[i] - QPosold)/sigmat1, nu) - log(sigmat1);                              }
+                } else {
+                  tt[i] = find_tau_lo(resLin[i], QPosold, b0dot[mid+l-1], b0dot[mid+l], taugrid[mid+l-1], taugrid[mid+l]);
+                  if(cens[i]>0){
+                        if(cens[i]==1){     // right censored data contribution: log(probability Y> y_i = 1 - tau_i)
+                            ll[i] = log(1.0 - tt[i]);
+                        } else {            // left censored data contribution
+                            ll[i] = log(tt[i]);
+                        }  
+                    } else {
+                      ll[i] = -log(part_trape_tt(tt[i], b0dot[mid+l-1], b0dot[mid+l], taugrid[mid+l-1], taugrid[mid+l]));
                     }
                 }
             } else {
@@ -376,20 +392,30 @@ double logpostFn_noX(double *par, double temp, int llonly, double *ll, double *p
                     l++;
                     QNeg = Q0Neg[l];
                 }
-                if(cens[i]==1){
-                    ll[i] = log(1.0 - taugrid[mid - l +1]); // right censored data contribution
-                } else if (cens[i]==2){  // left censored data contribution
-                   ll[i] = log(taugrid[mid -l]);
-                } else {
-                    if(l == mid) {
-                        ll[i] = lf0tail(Q0tail(taugrid[1], nu) + (resLin[i] + QNegold)/sigmat2, nu) - log(sigmat2);
-                        //ll[i] = lf0tail(-QNeg + (resLin[i] + QNeg) / sigmat2, nu) - log(sigmat2);
+                if(l == mid) {
+                  tt[i] = F0(Q0tail(taugrid[1], nu) + (resLin[i] + QNegold)/sigmat2, nu) ;
+                    if(cens[i]>0){
+                      if(cens[i]==1){
+                        ll[i] = log(1.0 - tt[i]); 
+                      } else {
+                        ll[i] = log(tt[i]);	
+                      }
                     } else {
-                        //ll[i] = log(taugrid[mid-l+1]-taugrid[mid-l]) - log(QNeg - QNegold);
-                        ll[i] = -log(part_trape(-resLin[i], QNegold, b0dot[mid-l+1], b0dot[mid-l], taugrid[mid-l+1] - taugrid[mid-l]));
+                      ll[i] = lf0tail(Q0tail(taugrid[1], nu) + (resLin[i] + QNegold)/sigmat2, nu) - log(sigmat2);
                     }
+                } else {
+                  tt[i] = find_tau_up(resLin[i], -QNegold, b0dot[mid-l], b0dot[mid-l+1], taugrid[mid-l], taugrid[mid-l+1]);
+                  if(cens[i]>0){
+                    if(cens[i]==1){
+                      ll[i] = log(1 - tt[i]);
+                    } else {
+                      ll[i] = log(tt[i]);
+                    }
+                  } else {
+                     ll[i] = -log(part_trape_tt(tt[i], b0dot[mid-l], b0dot[mid-l+1], taugrid[mid-l], taugrid[mid-l+1]));
+                  }
                 }
-            }
+            }    
             if(ll[i] == qt(1.0, 1.0, 1, 0)) Rprintf("i = %d, ll[i] = %g, resLin[i] = %g, l = %d\n", i, ll[i], resLin[i], l);
         }
     } else {
@@ -415,9 +441,10 @@ double logpostFn_noX(double *par, double temp, int llonly, double *ll, double *p
 // 3 *llonly   1=evaluate ll only, leaving out nu prior, 0=evaluate log posterior including nu prior
 // 4 *ll       Vector of log-likelihood evaluations for each of n observations
 // 5 *pg       Vector of contributions of gamma priors to log likelihood
+// 6 *tt       Vector of taus associated with each of n observations
 // Output:
 // double lp   Log posterior
-double logpostFn(double *par, double temp, int llonly, double *ll, double *pg){
+double logpostFn(double *par, double temp, int llonly, double *ll, double *pg, double *tt){
 	
 	int i, j, l, reach = 0, reach2 = 0;
 	double w0max, zeta0tot, lps0, gam0, sigma, nu, QPos, QPosold, QNeg, QNegold, sigmat1, sigmat2, den0;
@@ -458,8 +485,10 @@ double logpostFn(double *par, double temp, int llonly, double *ll, double *pg){
 	}
 	
 	if(temp > 0.0){
-		for(i = 0; i < n; i++) ll[i] = log(0.0);
-		
+		for(i = 0; i < n; i++) {
+		  ll[i] = log(0.0);
+	    tt[i] = taugrid[mid];
+	  }
         mmprod(vMat, x, a, L, p, n, 1, 1, 0); // vMat%*%x  (L x p0)%*%(p x n) gives 'a' (L x n) as output 
         for(l = 0; l < L; l++){
 			for(vNormSq[l] = 0.0, j = 0; j < p; j++) vNormSq[l] += vMat[j][l] * vMat[j][l];
@@ -479,7 +508,7 @@ double logpostFn(double *par, double temp, int llonly, double *ll, double *pg){
         //Rprintf("sigma = %g, nu = %g\n", sigma, nu);
         
         // Obtain prediction and residuals for each observation if predictions
-        // were solely based on median regression.
+        // were solely based reference
         for(i = 0; i < n; i++) xLin[i] = gam0 + inprod(x[i], gam, p);
         for(i = 0; i < n; i++) resLin[i] = y[i] - xLin[i];
         //Rprintvec("resLin = ", "%g ", resLin, n);
@@ -490,7 +519,7 @@ double logpostFn(double *par, double temp, int llonly, double *ll, double *pg){
         for(j = 0; j < p; j++) for(l = 0; l < L; l++) bdot[j][l] = b0dot[l] * vTilde[j][l];
         
         // Obtain beta_j(tau) for j=0 to p, by integrating each derivative.
-        // Each integration dones in two parts cumulatively moving away from the median vlues.
+        // Each integration dones in two parts cumulatively moving away from the median va\lues.
         trape(b0dot + mid, taugrid + mid, L - mid, Q0Pos, 0); Q0Pos[L-mid] = qt(1.0, 1.0, 1, 0);
         trape(b0dot + mid, taugrid + mid, mid + 1, Q0Neg, 1); Q0Neg[mid+1] = qt(1.0, 1.0, 1, 0);
         //Rprintvec("Q0Pos = ", "%g ", Q0Pos, L - mid + 1);
@@ -505,7 +534,8 @@ double logpostFn(double *par, double temp, int llonly, double *ll, double *pg){
         //sigmat2 = sigma * q0(taugrid[1],nu) / q0tail(taugrid[1]);
         sigmat1 = sigmat2 = sigma;
         
-        double qdot_lo = 0.0, qdot_up = 0.0;
+        // Contribution to log-likelihood of point y_i
+        double qdot_lo = 0.0, qdot_up = 0.0; //, h=0.5;
         for(i = 0; i < n; i++){  // add in contributions from each observation
             if(resLin[i] == 0.0){  // case Y_i=median data quantile
                 for(den0 = b0dot[mid], j = 0; j < p; j++) den0 += x[i][j] * bdot[j][mid];
@@ -523,23 +553,32 @@ double logpostFn(double *par, double temp, int llonly, double *ll, double *pg){
                     l++;
                     for(QPos = Q0Pos[l], j = 0; j < p; j++) QPos += x[i][j] * bPos[j][l];
                 }
-                // Contribution to log-likelihood of point y_i
-                if(cens[i]==1){ // for right censored data this is just log(probability of > tau = 1 - tau)
-                    ll[i] = log(1.0 - taugrid[mid + l]);
-                } else if (cens[i]==2){ // left censored data contribution
-                    ll[i] = log(taugrid[mid + l -1]);				  
-                } else {
-                   // otherwise contribution found by locating observation and integration
-                    if(l == L - mid - 1)
+                // if point located above largest grid tau...
+                if(l == L - mid - 1){
+                  tt[i] = F0(Q0tail(taugrid[L-2], nu) + (resLin[i] - QPosold)/sigmat1, nu) ;
+                    if(cens[i]>0){
+                        if(cens[i]==1){
+                            ll[i] = log(1.0 - tt[i]); 
+                        } else {           
+                            ll[i] = log(tt[i]);		  
+                        }
+                    } else {
                         ll[i] = lf0tail(Q0tail(taugrid[L-2], nu) + (resLin[i] - QPosold)/sigmat1, nu) - log(sigmat1);
-                        //ll[i] = lf0tail(Qpos + (resLin[i] - QPos)/sigmat1, nu) - log(sigmat1);
-                        // Otherwise estimate log (1/slope Q at tau) using the Q points that Y_i falls between & corresponding taus
-                    else {
-                        //ll[i] = log(taugrid[mid+l] - taugrid[mid+l-1]) - log(QPos - QPosold);
-                        for(qdot_lo = b0dot[mid+l-1], j = 0; j < p; j++) qdot_lo += bdot[j][mid+l-1] * x[i][j];
-                        for(qdot_up = b0dot[mid+l], j = 0; j < p; j++) qdot_up += bdot[j][mid+l] * x[i][j];
-                        ll[i] = -log(part_trape(resLin[i], QPosold, qdot_lo, qdot_up, taugrid[mid+l] - taugrid[mid+l-1]));
                     }
+                }  else {
+                  // if located anywhere in estimated grid...
+                  for(qdot_lo = b0dot[mid+l-1], j = 0; j < p; j++) qdot_lo += bdot[j][mid+l-1] * x[i][j];
+                  for(qdot_up = b0dot[mid+l], j = 0; j < p; j++) qdot_up += bdot[j][mid+l] * x[i][j];
+                  tt[i] = find_tau_lo(resLin[i], QPosold, qdot_lo, qdot_up, taugrid[mid+l-1], taugrid[mid+l]);
+                  if(cens[i]>0){
+                      if(cens[i]==1){     // right censored data contribution: log(probability Y> y_i = 1 - tau_i)
+                          ll[i] = log(1.0 - tt[i]);
+                      } else {            // left censored data contribution
+                          ll[i] = log(tt[i]);
+                      }
+                  } else {                // Otherwise estimate log (1/Q at tau*)
+                    ll[i] = -log(part_trape_tt(tt[i], qdot_lo, qdot_up, taugrid[mid+l-1], taugrid[mid+l]));
+                  }
                 }
             } else {
                 l = 0;
@@ -551,19 +590,29 @@ double logpostFn(double *par, double temp, int llonly, double *ll, double *pg){
                     l++;
                     for(QNeg = Q0Neg[l], j = 0; j < p; j++) QNeg += x[i][j] * bNeg[j][l];
                 }
-                if(cens[i]==1){
-                    ll[i] = log(1.0 - taugrid[mid - l +1]); // right censored data contribution
-                } else if (cens[i]==2){  // left censored data contribution
-                    ll[i] = log(taugrid[mid -l]);
+                if(l == mid){               // tail
+                    tt[i] = F0(Q0tail(taugrid[1], nu) + (resLin[i] + QNegold)/sigmat2, nu) ;
+                    if(cens[i]>0){
+                        if(cens[i]==1){     // right censored
+                          ll[i] = log(1.0 - tt[i]); 
+                        } else {            // left censored
+                          ll[i] = log(tt[i]);	
+                        }
+                    } else {
+                      ll[i] = lf0tail(Q0tail(taugrid[1], nu) + (resLin[i] + QNegold)/sigmat2, nu) - log(sigmat2);
+                    }
                 } else {
-                    if(l == mid)
-                        ll[i] = lf0tail(Q0tail(taugrid[1], nu) + (resLin[i] + QNegold)/sigmat2, nu) - log(sigmat2);
-                        //ll[i] = lf0tail(-QNeg + (resLin[i] + QNeg)/sigmat2, nu) - log(sigmat2);
-                    else {
-                        //ll[i] = log(taugrid[mid-l+1]-taugrid[mid-l]) - log(QNeg - QNegold);
-                        for(qdot_lo = b0dot[mid-l+1], j = 0; j < p; j++) qdot_lo += bdot[j][mid-l+1] * x[i][j];
-                        for(qdot_up = b0dot[mid-l], j = 0; j < p; j++) qdot_up += bdot[j][mid-l] * x[i][j];
-                        ll[i] = -log(part_trape(-resLin[i], QNegold, qdot_lo, qdot_up, taugrid[mid-l+1] - taugrid[mid-l]));
+                    for(qdot_lo = b0dot[mid-l], j = 0; j < p; j++) qdot_lo += bdot[j][mid-l] * x[i][j];
+                    for(qdot_up = b0dot[mid-l+1], j = 0; j < p; j++) qdot_up += bdot[j][mid-l+1] * x[i][j];
+                    tt[i] = find_tau_up(resLin[i], -QNegold, qdot_lo, qdot_up, taugrid[mid-l], taugrid[mid-l+1]); //2
+                    if(cens[i]>0){
+                        if(cens[i]==1){     // right censored
+                            ll[i] = log(1.0 - tt[i]);
+                        } else {            // left censored
+                            ll[i] = log(tt[i]);
+                        }                    
+                    } else {
+                      ll[i] = -log(part_trape_tt(tt[i], qdot_lo, qdot_up, taugrid[mid-l], taugrid[mid-l+1]));
                     }
                 }
             }			
@@ -589,20 +638,20 @@ double logpostFn(double *par, double temp, int llonly, double *ll, double *pg){
 
 
 // Define global pointers
-double *llvec, *pgvec;
+double *llvec, *pgvec, *ttvec;
 
 double lpFn_noX(double *par, double temp){
-    return logpostFn_noX(par, temp, 0, llvec, pgvec);
+    return logpostFn_noX(par, temp, 0, llvec, pgvec, ttvec);
 }
 
 // Shortened evaluation of logpostFn; defaults to inclusion of prior on nu
 double lpFn(double *par, double temp){
-	return logpostFn(par, temp, 0, llvec, pgvec);
+	return logpostFn(par, temp, 0, llvec, pgvec, ttvec);
 }
 
 // Shortened evaluation of logpostFn; fix temp==1 and evaluate ll does not include prior on nu
 double lpFn1(double *par, double *pgvec){
-	return logpostFn(par, 1.0, 1, llvec, pgvec);
+	return logpostFn(par, 1.0, 1, llvec, pgvec, ttvec);
 }
 
 //---------Function for performing Bayesian Quantile Density Estimation--------//
@@ -803,6 +852,7 @@ void BJQR(double *par, double *xVar, double *yVar, int *status, double *weights,
     Q0Neg = vect(L);
     bNeg = mymatrix(p, L);
     llvec = vect(n);
+    ttvec = vect(n);
     pgvec = vect(ngrid*(p+1));
     zeta0_tick = ivect(L);
     zeta0_dist = vect(L);
@@ -834,7 +884,6 @@ void BJQR(double *par, double *xVar, double *yVar, int *status, double *weights,
     adMCMC(niter, thin, npar, par, mu, S, acpt_target, decay, refresh, lm, temp, 
            nblocks, blocks, blocks_size, refresh_counter, verbose, ticker, 
            lpFn, parsamp, acptsamp, lpsamp);
-    
     
 }
 
@@ -905,11 +954,11 @@ double *par0;
 // Function to be maximized over sigma when finding starting sigma values
 double lpFn2_noX(double sigma){
     par0[sig_pos] = sigma;
-    return logpostFn_noX(par0, 1.0, 0, llvec, pgvec);
+    return logpostFn_noX(par0, 1.0, 0, llvec, pgvec, ttvec);
 }
 double lpFn2(double sigma){
 	par0[sig_pos] = sigma;
-	return logpostFn(par0, 1.0, 0, llvec, pgvec);
+	return logpostFn(par0, 1.0, 0, llvec, pgvec, ttvec);
 }
 
 void INIT_noX(double *par, double *yVar, int *status, double *weights, double *hyper, int *dim, double *gridpars, double *tauG, double *siglim, int *distribution){
@@ -964,6 +1013,7 @@ void INIT_noX(double *par, double *yVar, int *status, double *weights, double *h
     Q0Pos = vect(L);
     Q0Neg = vect(L);
     llvec = vect(n);
+    ttvec = vect(n);
     pgvec = vect(ngrid*(p+1));
     zeta0_tick = ivect(L);
     zeta0_dist = vect(L);
@@ -1055,6 +1105,7 @@ void INIT(double *par, double *xVar, double *yVar, int *status, double *weights,
 	Q0Neg = vect(L);
 	bNeg = mymatrix(p, L);
 	llvec = vect(n);
+	ttvec = vect(n);
 	pgvec = vect(ngrid*(p+1));
         zeta0_tick = ivect(L);
         zeta0_dist = vect(L);
@@ -1077,7 +1128,7 @@ void INIT(double *par, double *xVar, double *yVar, int *status, double *weights,
 //----------------Functions for post MCMC evaluation of Deviance--------------//
 
 
-void DEV_noX(double *par, double *yVar, int *status, double *weights, double *hyper, int *dim, double *gridpars, double *tauG, double *devsamp, double *llsamp, double *pgsamp){
+void DEV_noX(double *par, double *yVar, int *status, double *weights, double *hyper, int *dim, double *gridpars, double *tauG, double *devsamp, double *llsamp, double *pgsamp, double *ttsamp){
     
     int i, k, l;
     
@@ -1135,7 +1186,7 @@ void DEV_noX(double *par, double *yVar, int *status, double *weights, double *hy
     reach = 0;
     int iter, reach2 = 0, reach3 = 0;
     for(iter = 0; iter < niter; iter++){
-        devsamp[iter] = -2.0 * logpostFn_noX(par + reach, 1.0, 1, llsamp + reach2, pgsamp + reach3);
+        devsamp[iter] = -2.0 * logpostFn_noX(par + reach, 1.0, 1, llsamp + reach2, pgsamp + reach3, ttsamp + reach2);
         reach += npar; reach2 += n; reach3 += ngrid;
     }
 }
@@ -1143,7 +1194,7 @@ void DEV_noX(double *par, double *yVar, int *status, double *weights, double *hy
 
 // Function to calculate post-hoc the Deviance at each iteration; 
 // called within the summary.qrjoint function in R
-void DEV(double *par, double *xVar, double *yVar, int *status, double *weights, int *toShrink, double *hyper, int *dim, double *gridpars, double *tauG, double *devsamp, double *llsamp, double *pgsamp){
+void DEV(double *par, double *xVar, double *yVar, int *status, double *weights, int *toShrink, double *hyper, int *dim, double *gridpars, double *tauG, double *devsamp, double *llsamp, double *pgsamp, double *ttsamp){
 	
 	int i, j, k, l;
 	
@@ -1216,7 +1267,7 @@ void DEV(double *par, double *xVar, double *yVar, int *status, double *weights, 
 	reach = 0;
 	int iter, reach2 = 0, reach3 = 0;
 	for(iter = 0; iter < niter; iter++){
-		devsamp[iter] = -2.0 * logpostFn(par + reach, 1.0, 1, llsamp + reach2, pgsamp + reach3);
+		devsamp[iter] = -2.0 * logpostFn(par + reach, 1.0, 1, llsamp + reach2, pgsamp + reach3, ttsamp + reach2);
 		reach += npar; reach2 += n; reach3 += ngrid * (p+1);
 	}
 }
@@ -1278,10 +1329,10 @@ void PRED_noX(double *par, double *yGrid, double *hyper, int *dim, double *gridp
     zeta0_dist = vect(L);
     
     reach = 0;
-    double lldummy, *pgdummy = vect(ngrid);
+    double lldummy, *pgdummy = vect(ngrid), *ttdummy = vect(n);
     int iter, reach2 = 0, reach3 = 0;
     for(iter = 0; iter < niter; iter++){
-        lldummy = logpostFn_noX(par + reach, 1.0, 1, logdenssamp + reach2, pgdummy);
+        lldummy = logpostFn_noX(par + reach, 1.0, 1, logdenssamp + reach2, pgdummy, ttdummy);
         reach += npar; reach2 += n; reach3 += ngrid;
     }
 }
@@ -1901,13 +1952,58 @@ void adMCMC(int niter, int thin, int npar, double *par, double **mu, double ***S
 	for(i = 0; i < npar; i++) par[i] = parstore[ipar][i];
 }
 
-
 void transform_grid(double *w, double *v, int *ticks, double *dists){
     int l;
     for(l = 0; l < L; l++) v[l] = (1.0 - dists[l]) * w[ticks[l]] + dists[l] * w[ticks[l]+1];
 }
 
-double part_trape(double target, double baseline, double a, double b, double Delta){
-    double h = (-a*Delta + sqrt(a*a * Delta*Delta + 2*Delta*(b-a)*(target - baseline)))/((b-a)*Delta);
-    return ((1.0 - h)*a + h*b);
+// Locates value "target" (in relation to baseline). Uses quadratic polynomial to approximate Q.
+// Employs constraint such that 'a' and 'b' are derivative of Q at lower and upper delta bounds.
+// And baseline is Q(taua)
+double find_tau_lo(double target, double baseline, double a, double b, double taua, double taub){
+  double loc, Delta = taub - taua;
+  if (fabs(b-a)>1.0e-15){
+      loc = ((b*taua - a*taub) + sqrt(a*a * Delta*Delta + 2*Delta*(b-a)*(target - baseline)))/(b-a);
+  } else { // when slopes equal, linear interpolant
+    loc = taua + (target - baseline)/a;
+  }
+  return(loc);
 }
+
+// Version for approximating Q in the QNeg region. Also employs constraints such that
+// 'a' and 'b' are derivative of Q at lower and upper grid points. This one additionally
+// constrains so that baseline is Q(taub).  Will need target = res, baseline= -QNeg
+double find_tau_up(double target, double baseline, double a, double b, double taua, double taub){
+  double loc, Delta = taub - taua;
+  if (fabs(b-a)>1.0e-15){
+    loc = ((b*taua - a*taub) + sqrt(b*b * Delta*Delta + 2*Delta*(b-a)*(target - baseline)))/(b-a);
+  } else { // when slopes equal, linear interpolant
+    loc = taub - (target - baseline)/b;
+  }
+  return(loc);
+}
+
+// Given proportion and lower & upper derivatives at delta grid, approximates derivative of
+// quantile function at y for likelihood contribution; use in conjunction with prop_tau
+double part_trape_tt(double loc, double a, double b, double taua, double taub){
+  return ((b*(loc - taua)/(taub - taua) + a*(taub - loc)/(taub - taua)));
+}
+
+
+
+// This is the former interpolation of deriv Q, which used a quadratic
+// approximation to interpolate between grid points at each data point.
+// This is slighlty more robust than the version of 1.0-5, as it has a linear
+// approximation built in for numeric stability. h is the proportion of that way that
+// y's response proportion is between gridpoints taua and taub.
+// Removed when liklihood function modified to return estimated taus, as that version
+// completely revised how qdot_lo and qdot_up are used in the QNeg region
+// double part_trape(double target, double baseline, double a, double b, double Delta){
+//  double h;
+//  if (fabs(b-a)>1.0e-15){
+//    h = (-a*Delta + sqrt(a*a * Delta*Delta + 2*Delta*(b-a)*(target - baseline)))/((b-a)*Delta);
+//  } else { // case where slopes close to equal -- do linear interpolant
+//    h = (target - baseline)/(a*Delta);
+//  }
+//  return ((1.0 - h)*a + h*b);
+//}
