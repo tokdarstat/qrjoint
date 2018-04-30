@@ -21,7 +21,7 @@ Extracts posterior draws of intercept and slope functions from saved draws of mo
 
 \item{beta.samp}{a three-dimensional array of posterior samples of \eqn{\beta_j}{{beta}[j]}. Its dimensions are \code{L} (length of tau.grid)  x \code{p+1} (intercept + slopes) x \code{nmc} (retained posterior draws).}
 \item{beta.est}{a three-dimensional array containing posterior summaries (2.5th,  50th, and 97.5th percentiles) of \eqn{\beta_j}{{beta}[j]}. Its dimensions are \code{L} (length of tau.grid)  x \code{p+1} (intercept + slopes) x 3 (posterior summaries).} 
-\item{parametric}{a matrix with 3 columns giving the estimate (posterior median) and the lower and upper end points of the 95\% posterior credible interval for \eqn{\gamma_0}{{gamma}[0]}, \eqn{\sigma}{sigma}, and, \eqn{\nu}{nu}.}
+\item{parametric}{a matrix with 3 columns giving the estimate (posterior median) and the lower and upper end points of the 95\% posterior credible interval for \eqn{\gamma_0}{gamma0}, \eqn{\gamma}{gamma}, \eqn{\sigma}{sigma}, and, \eqn{\nu}{nu}.}
 }
 
 

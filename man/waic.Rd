@@ -19,7 +19,7 @@ Returns the two version of the WAIC
 \references{Gelman, A., Hwang, J., and Vehtari, A. (2014). Understanding predictive information criterion for Bayesian models. \emph{Stat Comput}, 24, 997-1016.}
 
 \examples{ 
-## Plasma data analysis
+# Plasma data analysis
 
 # recoding variables
 data(plasma)
