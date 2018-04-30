@@ -1,5 +1,5 @@
 \name{qde}
-\Rdversion{1.0-5}
+\Rdversion{2.0}
 \alias{qde}
 \alias{update.qde}
 \title{Quantiles based Density Estimation}

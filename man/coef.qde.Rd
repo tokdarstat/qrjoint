@@ -1,5 +1,5 @@
-\name{coef.qrjoint}
-\Rdversion{1.0-5}
+\name{coef.qde}
+\Rdversion{2.0}
 \alias{coef.qde}
 \title{Coefficient Extraction from qde Model Fit}
 \description{Post process MCMC output from \code{\link{qde}} to create summaries of the quantile estimates.}

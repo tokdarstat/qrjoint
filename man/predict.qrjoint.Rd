@@ -1,39 +1,49 @@
 \name{predict.qrjoint}
-\Rdversion{1.0-5}
+\Rdversion{2.0}
 \alias{predict.qrjoint}
-\title{Posterior predictive Summary for Quantile based Density Estimation}
-\description{Extract posterior predictive density estimate for \code{\link{qde}}}
+\title{Posterior predictive summary for quantile estimation}
+\description{Extract quantile functions for \code{\link{qrjoint}}}
 \usage{ 
-\method{predict}{qde}(object, burn.perc = 0.5, nmc = 200, yRange = range(object$y), yLength = 401)
+\method{predict}{qrjoint}(object, newdata=NULL, summarize=TRUE, burn.perc = 0.5, nmc = 200)
 } 
 \arguments{
-    \item{object}{a fitted model of the class 'qde'.}
+    \item{object}{a fitted model of the class 'qrjoint'.}
+    \item{newdata}{an optional data frame in which to look for variables with which to predict. If omitted, the fitted data are used.}
     \item{burn.perc}{a positive fraction indicating what fraction of the saved draws are to be discarded as burn-in}
     \item{nmc}{integer giving the number of samples, post burn-in, to be used in Monte Carlo averaging}
-    \item{yRange}{Range of values over which posterior predictive density is to be evaluated.}
-    \item{yLength}{Number of grid points spanning yRange for posterior predictive density evaluation.}
 }
-\value{
-Returns a list with three items:
-\item{y}{vector giving the grid over which the posterior predictive density is evaluated.}
-\item{fsamp}{a matrix with \code{yLength} many rows and \code{nmc} many columns. Each column corresponds to a draw of the response density from the posterior predictive.}
-\item{fest}{summary of the posterior predictive density given by point-wise median, 2.5th and 97.5th percentiles.}
+\value{Either returns
+\item{}{a matrix of posterior quantile-function medians if \code{summarize=TRUE}. Dimensions are \code{n} (number of rows in predicted data) x \code{L} (length of regularized tau.grid); or}
+\item{}{a three dimensional array of posterior quantile-function samples if \code{summarize=FALSE}. Dimensions are \code{n} (number of rows in predicted data) x \code{L} (length of regularized tau.grid)  x \code{nmc} (retained posterior draws).}
+
 }
 
-\seealso{\code{\link{qde}} and \code{\link{summary.qde}}.}
+\note{
+When supplying \code{newdata}, new covariate values should lie within the convex hull of the original observed covariate space; otherwise, it is possible that extrapolated quantile functions will not obey the quantile monotonicity constraint.
+
+Additional functionality is planned in future release to provide density function estimates given a set of input x.
+}
+
+\seealso{\code{\link{qrjoint}} and \code{\link{summary.qrjoint}}.}
 \examples{ 
-# Plasma data analysis
+## Plasma data analysis
 
+# recoding variables
 data(plasma)
-Y <- plasma$BetaPlasma
-Y <- Y + 0.1 * rnorm(length(Y)) ## remove atomicity
+plasma$Sex <- as.factor(plasma$Sex)
+plasma$SmokStat <- as.factor(plasma$SmokStat)
+plasma$VitUse <- 3 - plasma$VitUse
+plasma$VitUse <- as.factor(plasma$VitUse)
 
-# model fitting with 50 posterior samples from 100 iterations (thin = 2)
-fit.qde <- qde(Y, 50, 2)
-pred <- predict(fit.qde)
-hist(Y, freq = FALSE, col = "gray", border = "white", ylim = c(0, max(pred$fest)))
-lines(pred$y, pred$fest[,2])
-lines(pred$y, pred$fest[,1], lty = 2)
-lines(pred$y, pred$fest[,3], lty = 2)
+# Model fitting with 40 posterior samples from 80 iterations (thin = 2) is for
+# illustration only. For practical model fitting, increase iterations, 
+# e.g. nsamp = 500, thin = 20
+fit.qrj <- qrjoint(BetaPlasma ~ Age + Sex + SmokStat + Quetelet + VitUse + Calories + 
+        Fat + Fiber + Alcohol + Cholesterol + BetaDiet, plasma, nsamp = 40, thin = 2)
+summary(fit.qrj, more = TRUE)
+
+quants <- predict(fit.qrj)
+matplot(fit.qrj$tau.g[fit.qrj$reg.ix], t(quants), type="l", xlab="p", ylab="Quantile Function", col="lightgray", lty=1)
+
 }
 \keyword{programming}

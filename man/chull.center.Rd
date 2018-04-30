@@ -1,5 +1,5 @@
 \name{chull.center}
-\Rdversion{0.1-1}
+\Rdversion{2.0}
 \alias{chull.center}
 \title{Fast Interior Point Center of Multivariate Data}
 \description{Calculates an interior point by averaging a small number of near-extreme points of the cloud.} 

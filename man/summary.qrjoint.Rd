@@ -1,5 +1,5 @@
 \name{summary.qrjoint}
-\Rdversion{0.1-1}
+\Rdversion{2.0}
 \alias{summary.qrjoint}
 \title{Summary Method for qrjoint Model Fit}
 \description{Summarize model fit, including MCMC details, for \code{\link{qrjoint}}} 
@@ -20,14 +20,15 @@ The following quantities are returned invisibly.
 \item{deviance}{vector deviance statistic of the samples parameter draws} 
 \item{pg}{a matrix with \code{nsamp} number of columns, each columns could be coerced into a matrix of dimension \code{ngrid * (p+1)}, where the columns gives the conditional posterior weights on the lambda grid values for the corresponding GP function.}       
 \item{prox}{posterior draws of proximity in the form of a \code{(p+1)*nsamp} matrix.}
-\item{ll}{a matrix of \code{n*nsamp} containing observation level log-likelihood contributions. Used to calculate \var{waic}, and could be used for other AIC calculations.}       
+\item{ll}{a matrix of \code{n*nsamp} containing observation level log-likelihood contributions. Used to calculate \var{waic}, and could be used for other AIC calculations.}
+\item{rp}{a matrix of \code{n*nsamp} containing observation-level estimated response proportions (i.e. t such that \eqn{y = Q(t|x)}) at each posterior draw. These may be used in-lieu of residuals to assess model fit and assumption of linearity.}
 \item{waic}{Two versions of Watanabe AIC from Gelman, Hwang and Vehtari (2014).}
 }
 
 \references{Gelman, A., Hwang, J., and Vehtari, A. (2014). Understanding predictive information criterion for Bayesian models. \emph{Stat Comput}, 24, 997-1016.}
 \seealso{\code{\link{qrjoint}} and \code{\link{coef.qrjoint}}.}
 \examples{ 
-# Plasma data analysis
+## Plasma data analysis
 
 # recoding variables
 data(plasma)
@@ -36,13 +37,11 @@ plasma$SmokStat <- as.factor(plasma$SmokStat)
 plasma$VitUse <- 3 - plasma$VitUse
 plasma$VitUse <- as.factor(plasma$VitUse)
 
-# creating predictors and response (beta carotene concentration in the plasma)
-X <- model.matrix(BetaPlasma ~ Age + Sex + SmokStat + Quetelet + VitUse + Calories + 
-        Fat + Fiber + Alcohol + Cholesterol + BetaDiet, data = plasma)[,-1]
-Y <- plasma$BetaPlasma
-
-# model fitting with 50 posterior samples from 100 iterations (thin = 2)
-fit.qrj <- qrjoint(X, Y, 50, 2)
+# Model fitting with 40 posterior samples from 80 iterations (thin = 2) is for
+# illustration only. For practical model fitting, increase iterations, 
+# e.g. nsamp = 500, thin = 20
+fit.qrj <- qrjoint(BetaPlasma ~ Age + Sex + SmokStat + Quetelet + VitUse + Calories + 
+        Fat + Fiber + Alcohol + Cholesterol + BetaDiet, plasma, nsamp = 40, thin = 2)
 summary(fit.qrj, more = TRUE)
 }
 \keyword{programming}

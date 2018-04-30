@@ -1,5 +1,5 @@
 \name{qrjoint}
-\Rdversion{0.1-6}
+\Rdversion{2.0}
 \alias{qrjoint}
 \alias{update.qrjoint}
 \title{Joint Estimation of Linear Quantile Planes}
@@ -11,21 +11,21 @@ qrjoint(formula, data, nsamp = 1e3, thin = 10, cens = rep(0,length(y)),
     hyper = list(sig = c(.1,.1), lam = c(6,4), kap = c(.1,.1,1)), 
     shrink = FALSE, prox.range = c(.2,.95), acpt.target = 0.15, 
     ref.size = 3, blocking = "std5", temp = 1, expo = 2, 
-    blocks.mu, blocks.S, fix.nu=FALSE, fbase = c("t", "unif"), x=TRUE)
+    blocks.mu, blocks.S, fix.nu=FALSE, fbase = c("t", "unif"), verbose = TRUE)
     
 \method{update}{qrjoint}(object, nadd, append = TRUE, ...)
 } 
 \arguments{
-\item{formula}{an object of class "formula": a symbolic description of the model to be fitted must include at least one predictor}
+\item{formula}{an object of class "formula": a symbolic description of the model to be fitted. It must include at least one predictor.}
 \item{data}{a data frame containing variables in the model.}
 \item{nsamp}{number of posterior samples to be saved; defaults to 1000.}
 \item{thin}{thinning rate for the Markov chain sampler -- one posterior sample is saved per \code{thin} iterations. Defaults to 10. The Markov chain sampler runs for a total of \code{nsamp * thin} many iterations.}
 \item{cens}{censoring status of response. Must be a vector of length NROW(data), with 0 indicating no censoring, 1 indicating right censoring, and 2 indicating left censoring. Defaults to all zeros.}
 \item{wt}{weights attached to the observation units, expected to be non-negative numbers, and defaults to a vector of ones.}
 \item{incr}{tau grid increment. Defaults to 0.01.} 
-\item{par}{character string indicating how the sampler is to be initialized. Only two options are currently supported: "prior" to initialize at a random draw from the prior; "RQ" to initialize at a model space approximation of the estimates from \code{\link{rq}}.}
+\item{par}{character string indicating how the sampler is to be initialized. Three options are currently supported: "prior" to initialize at a random draw from the prior; "RQ" to initialize at a model space approximation of the estimates from \code{\link{rq}}; and, "noX" to initialize at a model with all slope functions being equal to zero, and the intercept function obtained by fitting \code{qde} to the response data alone.}
 \item{nknots}{number of knots to be used for low rank approximation of the Gaussian process priors. Defaults to 6.}
-\item{hyper}{hyperparameters of the prior distribution. Must be a list with some of all of the following fields: \code{sig}: a two vector giving the parameters of the inverse-gamma distribution on sigma-square that is used when \code{shrink}=TRUE, \code{lam}: a two vector giving the parameters of the beta distribution on proximity = \eqn{\exp(-0.01* \lambda^2)}{exp(-0.01 * lambda^2)}, and \code{kap}:  a vector to be coerced into a \code{3 * nkap} matrix, with \code{nkap} being the number of components in the mixture of gamma prior on \code{kappa}, and each column of the matrix gives the shape, rate and mixing weight of a component.}
+\item{hyper}{hyperparameters of the prior distribution. Must be a list with some of all of the following fields: \code{sig}: a two vector giving the parameters of the inverse-gamma distribution on sigma-square that is used when \code{shrink}=TRUE, \code{lam}: a two vector giving the parameters of the beta distribution on proximity = \eqn{\exp(-0.01* \lambda^2)}{exp(-0.01 * lambda^2)}, and \code{kap}: a vector to be coerced into a \code{3 * nkap} matrix, with \code{nkap} being the number of components in the mixture of gamma prior on \code{kappa}, and each column of the matrix gives the shape, rate and mixing weight of a component.}
 \item{shrink}{for applying shrinkage to gamma[0] and gamma. Defaults to FALSE, in which case a right Haar prior is used on (gamma[0], gamma, sigma2). If TRUE then a horseshoe type prior is used.}
 \item{prox.range}{for specifying the range of length-scale parameter of the Gaussian process prior.}
 \item{acpt.target}{target acceptance rate of the adaptive Metropolis sampler; defaults to 0.15}
@@ -37,6 +37,7 @@ qrjoint(formula, data, nsamp = 1e3, thin = 10, cens = rep(0,length(y)),
 \item{blocks.S}{initial block specific covariance matrices in the form of a list. If left unspecified then will be automatically generated as a list of identity matrices of appropriate dimensions matching the corresponding block sizes. When \code{blocking} is chosen as one of the menu items of the form "std*", known prior covariance information and estimated variance matrices from \code{\link{rq}} are used.}
 \item{fix.nu}{either the logical FALSE indicating that nu should be learned, or a positive real number giving the fixed value of nu, which is then excluded from MCMC updates}
 \item{fbase}{either "t" (default) or "unif" to indicate what base distribution is to be used.}
+\item{verbose}{logical indicating whether MCMC progress should be printed, defaults to TRUE}
 \item{object}{a fitted model of the class 'qrjoint'.}
 \item{nadd}{number of additional MCMC samples.}
 \item{append}{logical indicating whether new samples should be appended to old ones. If FALSE then old samples are discarded.}
@@ -78,7 +79,7 @@ Returned object is a list containing the following variables.
 
 \details{
 
-A formula has an implied intercept term. This model requires that the intercept term be included.
+A formula has an implied intercept term. This model requires that the intercept term be included; therefore, it cannot be explicitely removed via (y ~ 0 + x) or (y ~ -1 + x) constructs.
 
 The model assumes each conditional quantile of the response is a hyper-plane. The intercept and slope functions (as functons of the response proportion) are estimated under the constraint that the resulting quantile planes are non-crossing over some closed, convex predictor domain. The domain is equated, by default, to the convex hull of the observed predictor vectors. The input argument \code{wt} provides more flexibility in the domain specification. All observation units are used in calculating the convex hull -- but only those with non-zero weights are used in the likelihood evaluation.
 

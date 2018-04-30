@@ -1,5 +1,5 @@
 \name{coef.qrjoint}
-\Rdversion{0.1-6}
+\Rdversion{2.0}
 \alias{coef.qrjoint}
 \title{Regression Coefficient Extraction from qrjoint Model Fit}
 \description{Post process MCMC output from \code{\link{qrjoint}} to create summaries of intercept and slope function estimates} 
@@ -17,10 +17,11 @@
 \item{...}{limited plotting parameters that are passed onto the call of \code{\link{getBands}}}
 }
 \value{
-Extracts posterior draws of intercept and slope functions from saved draws of model parameters. A plot may be obtained if \code{plot = TRUE}. A list is returned invisibly with two fields.
+Extracts posterior draws of intercept and slope functions from saved draws of model parameters. A plot may be obtained if \code{plot = TRUE}. A list is returned invisibly with three fields.
 
 \item{beta.samp}{a three-dimensional array of posterior samples of \eqn{\beta_j}{{beta}[j]}. Its dimensions are \code{L} (length of tau.grid)  x \code{p+1} (intercept + slopes) x \code{nmc} (retained posterior draws).}
 \item{beta.est}{a three-dimensional array containing posterior summaries (2.5th,  50th, and 97.5th percentiles) of \eqn{\beta_j}{{beta}[j]}. Its dimensions are \code{L} (length of tau.grid)  x \code{p+1} (intercept + slopes) x 3 (posterior summaries).} 
+\item{parametric}{a matrix with 3 columns giving the estimate (posterior median) and the lower and upper end points of the 95\% posterior credible interval for \eqn{\gamma_0}{{gamma}[0]}, \eqn{\sigma}{sigma}, and, \eqn{\nu}{nu}.}
 }
 
 
