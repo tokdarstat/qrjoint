@@ -32,8 +32,6 @@ Y <- Y + 0.1 * rnorm(length(Y)) ## remove atomicity
 fit.qde <- qde(Y, 50, 2)
 pred <- predict(fit.qde)
 hist(Y, freq = FALSE, col = "gray", border = "white", ylim = c(0, max(pred$fest)))
-lines(pred$y, pred$fest[,2])
-lines(pred$y, pred$fest[,1], lty = 2)
-lines(pred$y, pred$fest[,3], lty = 2)
+matplot(pred$y, pred$fest, type="l", col=1, lty=c(2,1,2), ylab="Density", xlab="y")
 }
 \keyword{programming}
