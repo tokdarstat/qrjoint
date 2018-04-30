@@ -42,17 +42,17 @@ void transform_grid(double *w, double *v, int *ticks, double *dists);
 
 double find_tau_lo(double target, double baseline, double a, double b, double taua, double taub);
 double find_tau_up(double target, double baseline, double a, double b, double taua, double taub);
-double part_trape_tt(double loc, double a, double b, double taua, double taub);
+double part_trape_rp(double loc, double a, double b, double taua, double taub);
 
-//global integers; Memory allocated in R via R_alloc
+//global integers
 int n, p, L, mid, m, nkap, ngrid, shrink, dist;
 
-//memory assigned to global constants
+//global constants
 double *taugrid, *akap, *bkap, *lpkap, asig, bsig, shrinkFactor, ***Agrid, ***Rgrid, *ldRgrid, *lpgrid, **x, *y, *wt;
 int *cens;
 int * zeta0_tick;
 
-//memory assigned to global variables (i.e memory overwritten multiple times)
+//global variables (i.e memory overwritten multiple times)
 double *lb;
 double **wgrid, *llgrid, *zknot, *lw;
 double **wMat, **vMat, **vTilde, *w0, *zeta0dot, *zeta0, *vNormSq, **a, *aX, *gam, *xLin, *resLin, *b0dot, **bdot;
@@ -62,24 +62,23 @@ double *zeta0_dist;
 //----------------------------Helper Functions-----------------------------//
 // called inside of other functions
 
-// Function that returns e^(z/2)
+// Function that returns e^(z/2); Allows sigma to be sampled on full real and returned to positive
 double sigFn(double z){
-	//return sqrt(1.0 / qgamma(pnorm(z, 0.0, 1.0, 1, 1), asig, 1.0/bsig, 1, 1));	
 	return exp(z/2.0);
 } 	
 
-// Function that returns 2*log(s)
+// Function that returns 2*log(s); Return sigma from positive real back to full real
 double sigFn_inv(double s) {
-	//return qnorm(pgamma(1.0 / s*s, asig, 1.0/bsig, 1, 1), 0.0, 1.0, 1, 1);
 	return 2.0*log(s);
 }
 
-// Function that transforms from XX to nu
+// Allows z, sampled on full real line, to be returned to values on [0.5,inf) when evaluation in dt needed
+// 0.5 added to avoid over and underflow
 double nuFn(double z)  {
 	return 0.5 + 5.5*exp(z/2.0);
 }
 
-// Inverse nuFn; unused
+// Inverse nuFn; unused in C code.
 double nuFn_inv(double nu) {
 	return 2.0*log((nu - 0.5)/5.5);
 }
@@ -306,7 +305,7 @@ double ppFn(double *wknot, double *w, double *postgrid){
 	return lps;
 }
 
-double logpostFn_noX(double *par, double temp, int llonly, double *ll, double *pg, double *tt){
+double logpostFn_noX(double *par, double temp, int llonly, double *ll, double *pg, double *rp){
     
     int i, l, reach = 0, reach2 = 0;
     double w0max, zeta0tot, lps0, gam0, sigma, nu, QPos, QPosold, QNeg, QNegold, sigmat1, sigmat2, den0;
@@ -327,7 +326,7 @@ double logpostFn_noX(double *par, double temp, int llonly, double *ll, double *p
     if(temp > 0.0){
         for(i = 0; i < n; i++) {
           ll[i] = log(0.0);
-          tt[i] = taugrid[mid];
+          rp[i] = taugrid[mid];
         }
         
         gam0 = par[reach++];
@@ -362,26 +361,19 @@ double logpostFn_noX(double *par, double temp, int llonly, double *ll, double *p
                     QPos = Q0Pos[l];
                 }
                 if(l == L - mid - 1) {
-                    tt[i] = F0(Q0tail(taugrid[L-2], nu) + (resLin[i] - QPosold)/sigmat1, nu) ;
-                    if(cens[i]>0){
-                        if(cens[i]==1){
-                          ll[i] = log(1.0 - tt[i]); 
-                        } else {
-                          ll[i] = log(tt[i]);		
-                        }
-                    } else {
-                      ll[i] = lf0tail(Q0tail(taugrid[L-2], nu) + (resLin[i] - QPosold)/sigmat1, nu) - log(sigmat1);                              }
-                } else {
-                  tt[i] = find_tau_lo(resLin[i], QPosold, b0dot[mid+l-1], b0dot[mid+l], taugrid[mid+l-1], taugrid[mid+l]);
-                  if(cens[i]>0){
-                        if(cens[i]==1){     // right censored data contribution: log(probability Y> y_i = 1 - tau_i)
-                            ll[i] = log(1.0 - tt[i]);
-                        } else {            // left censored data contribution
-                            ll[i] = log(tt[i]);
-                        }  
-                    } else {
-                      ll[i] = -log(part_trape_tt(tt[i], b0dot[mid+l-1], b0dot[mid+l], taugrid[mid+l-1], taugrid[mid+l]));
+                    rp[i] = F0(Q0tail(taugrid[L-2], nu) + (resLin[i] - QPosold)/sigmat1, nu) ;
+                    switch (cens[i]) {
+                      case 1: ll[i] = log(1.0 - rp[i]); break;
+                      case 2: ll[i] = log(rp[i]); break;
+                      default:ll[i] = lf0tail(Q0tail(taugrid[L-2], nu) + (resLin[i] - QPosold)/sigmat1, nu) - log(sigmat1); break;
                     }
+                } else {
+                  rp[i] = find_tau_lo(resLin[i], QPosold, b0dot[mid+l-1], b0dot[mid+l], taugrid[mid+l-1], taugrid[mid+l]);
+                  switch (cens[i]) {
+                    case 1: ll[i] = log(1.0 - rp[i]); break;
+                    case 2: ll[i] = log(rp[i]); break;
+                    default:ll[i] = -log(part_trape_rp(rp[i], b0dot[mid+l-1], b0dot[mid+l], taugrid[mid+l-1], taugrid[mid+l])); break;
+                  }
                 }
             } else {
                 l = 0;
@@ -393,26 +385,18 @@ double logpostFn_noX(double *par, double temp, int llonly, double *ll, double *p
                     QNeg = Q0Neg[l];
                 }
                 if(l == mid) {
-                  tt[i] = F0(Q0tail(taugrid[1], nu) + (resLin[i] + QNegold)/sigmat2, nu) ;
-                    if(cens[i]>0){
-                      if(cens[i]==1){
-                        ll[i] = log(1.0 - tt[i]); 
-                      } else {
-                        ll[i] = log(tt[i]);	
-                      }
-                    } else {
-                      ll[i] = lf0tail(Q0tail(taugrid[1], nu) + (resLin[i] + QNegold)/sigmat2, nu) - log(sigmat2);
+                  rp[i] = F0(Q0tail(taugrid[1], nu) + (resLin[i] + QNegold)/sigmat2, nu) ;
+                    switch (cens[i]) {
+                      case 1: ll[i] = log(1.0 - rp[i]); break;
+                      case 2: ll[i] = log(rp[i]); break;
+                      default:ll[i] = lf0tail(Q0tail(taugrid[1], nu) + (resLin[i] + QNegold)/sigmat2, nu) - log(sigmat2); break;
                     }
                 } else {
-                  tt[i] = find_tau_up(resLin[i], -QNegold, b0dot[mid-l], b0dot[mid-l+1], taugrid[mid-l], taugrid[mid-l+1]);
-                  if(cens[i]>0){
-                    if(cens[i]==1){
-                      ll[i] = log(1 - tt[i]);
-                    } else {
-                      ll[i] = log(tt[i]);
-                    }
-                  } else {
-                     ll[i] = -log(part_trape_tt(tt[i], b0dot[mid-l], b0dot[mid-l+1], taugrid[mid-l], taugrid[mid-l+1]));
+                  rp[i] = find_tau_up(resLin[i], -QNegold, b0dot[mid-l], b0dot[mid-l+1], taugrid[mid-l], taugrid[mid-l+1]);
+                    switch (cens[i]) {
+                    case 1: ll[i] = log(1.0 - rp[i]); break;
+                    case 2: ll[i] = log(rp[i]); break;
+                    default:ll[i] = -log(part_trape_rp(rp[i], b0dot[mid-l], b0dot[mid-l+1], taugrid[mid-l], taugrid[mid-l+1])); break;
                   }
                 }
             }    
@@ -441,10 +425,10 @@ double logpostFn_noX(double *par, double temp, int llonly, double *ll, double *p
 // 3 *llonly   1=evaluate ll only, leaving out nu prior, 0=evaluate log posterior including nu prior
 // 4 *ll       Vector of log-likelihood evaluations for each of n observations
 // 5 *pg       Vector of contributions of gamma priors to log likelihood
-// 6 *tt       Vector of taus associated with each of n observations
+// 6 *rp       Vector of taus associated with each of n observations
 // Output:
 // double lp   Log posterior
-double logpostFn(double *par, double temp, int llonly, double *ll, double *pg, double *tt){
+double logpostFn(double *par, double temp, int llonly, double *ll, double *pg, double *rp){
 	
 	int i, j, l, reach = 0, reach2 = 0;
 	double w0max, zeta0tot, lps0, gam0, sigma, nu, QPos, QPosold, QNeg, QNegold, sigmat1, sigmat2, den0;
@@ -487,7 +471,7 @@ double logpostFn(double *par, double temp, int llonly, double *ll, double *pg, d
 	if(temp > 0.0){
 		for(i = 0; i < n; i++) {
 		  ll[i] = log(0.0);
-	    tt[i] = taugrid[mid];
+	    rp[i] = taugrid[mid];
 	  }
         mmprod(vMat, x, a, L, p, n, 1, 1, 0); // vMat%*%x  (L x p0)%*%(p x n) gives 'a' (L x n) as output 
         for(l = 0; l < L; l++){
@@ -555,12 +539,12 @@ double logpostFn(double *par, double temp, int llonly, double *ll, double *pg, d
                 }
                 // if point located above largest grid tau...
                 if(l == L - mid - 1){
-                  tt[i] = F0(Q0tail(taugrid[L-2], nu) + (resLin[i] - QPosold)/sigmat1, nu) ;
+                  rp[i] = F0(Q0tail(taugrid[L-2], nu) + (resLin[i] - QPosold)/sigmat1, nu) ;
                     if(cens[i]>0){
                         if(cens[i]==1){
-                            ll[i] = log(1.0 - tt[i]); 
+                            ll[i] = log(1.0 - rp[i]); 
                         } else {           
-                            ll[i] = log(tt[i]);		  
+                            ll[i] = log(rp[i]);		  
                         }
                     } else {
                         ll[i] = lf0tail(Q0tail(taugrid[L-2], nu) + (resLin[i] - QPosold)/sigmat1, nu) - log(sigmat1);
@@ -569,15 +553,15 @@ double logpostFn(double *par, double temp, int llonly, double *ll, double *pg, d
                   // if located anywhere in estimated grid...
                   for(qdot_lo = b0dot[mid+l-1], j = 0; j < p; j++) qdot_lo += bdot[j][mid+l-1] * x[i][j];
                   for(qdot_up = b0dot[mid+l], j = 0; j < p; j++) qdot_up += bdot[j][mid+l] * x[i][j];
-                  tt[i] = find_tau_lo(resLin[i], QPosold, qdot_lo, qdot_up, taugrid[mid+l-1], taugrid[mid+l]);
+                  rp[i] = find_tau_lo(resLin[i], QPosold, qdot_lo, qdot_up, taugrid[mid+l-1], taugrid[mid+l]);
                   if(cens[i]>0){
                       if(cens[i]==1){     // right censored data contribution: log(probability Y> y_i = 1 - tau_i)
-                          ll[i] = log(1.0 - tt[i]);
+                          ll[i] = log(1.0 - rp[i]);
                       } else {            // left censored data contribution
-                          ll[i] = log(tt[i]);
+                          ll[i] = log(rp[i]);
                       }
                   } else {                // Otherwise estimate log (1/Q at tau*)
-                    ll[i] = -log(part_trape_tt(tt[i], qdot_lo, qdot_up, taugrid[mid+l-1], taugrid[mid+l]));
+                    ll[i] = -log(part_trape_rp(rp[i], qdot_lo, qdot_up, taugrid[mid+l-1], taugrid[mid+l]));
                   }
                 }
             } else {
@@ -591,12 +575,12 @@ double logpostFn(double *par, double temp, int llonly, double *ll, double *pg, d
                     for(QNeg = Q0Neg[l], j = 0; j < p; j++) QNeg += x[i][j] * bNeg[j][l];
                 }
                 if(l == mid){               // tail
-                    tt[i] = F0(Q0tail(taugrid[1], nu) + (resLin[i] + QNegold)/sigmat2, nu) ;
+                    rp[i] = F0(Q0tail(taugrid[1], nu) + (resLin[i] + QNegold)/sigmat2, nu) ;
                     if(cens[i]>0){
                         if(cens[i]==1){     // right censored
-                          ll[i] = log(1.0 - tt[i]); 
+                          ll[i] = log(1.0 - rp[i]); 
                         } else {            // left censored
-                          ll[i] = log(tt[i]);	
+                          ll[i] = log(rp[i]);	
                         }
                     } else {
                       ll[i] = lf0tail(Q0tail(taugrid[1], nu) + (resLin[i] + QNegold)/sigmat2, nu) - log(sigmat2);
@@ -604,15 +588,15 @@ double logpostFn(double *par, double temp, int llonly, double *ll, double *pg, d
                 } else {
                     for(qdot_lo = b0dot[mid-l], j = 0; j < p; j++) qdot_lo += bdot[j][mid-l] * x[i][j];
                     for(qdot_up = b0dot[mid-l+1], j = 0; j < p; j++) qdot_up += bdot[j][mid-l+1] * x[i][j];
-                    tt[i] = find_tau_up(resLin[i], -QNegold, qdot_lo, qdot_up, taugrid[mid-l], taugrid[mid-l+1]); //2
+                    rp[i] = find_tau_up(resLin[i], -QNegold, qdot_lo, qdot_up, taugrid[mid-l], taugrid[mid-l+1]); //2
                     if(cens[i]>0){
                         if(cens[i]==1){     // right censored
-                            ll[i] = log(1.0 - tt[i]);
+                            ll[i] = log(1.0 - rp[i]);
                         } else {            // left censored
-                            ll[i] = log(tt[i]);
+                            ll[i] = log(rp[i]);
                         }                    
                     } else {
-                      ll[i] = -log(part_trape_tt(tt[i], qdot_lo, qdot_up, taugrid[mid-l], taugrid[mid-l+1]));
+                      ll[i] = -log(part_trape_rp(rp[i], qdot_lo, qdot_up, taugrid[mid-l], taugrid[mid-l+1]));
                     }
                 }
             }			
@@ -638,20 +622,20 @@ double logpostFn(double *par, double temp, int llonly, double *ll, double *pg, d
 
 
 // Define global pointers
-double *llvec, *pgvec, *ttvec;
+double *llvec, *pgvec, *rpvec;
 
 double lpFn_noX(double *par, double temp){
-    return logpostFn_noX(par, temp, 0, llvec, pgvec, ttvec);
+    return logpostFn_noX(par, temp, 0, llvec, pgvec, rpvec);
 }
 
 // Shortened evaluation of logpostFn; defaults to inclusion of prior on nu
 double lpFn(double *par, double temp){
-	return logpostFn(par, temp, 0, llvec, pgvec, ttvec);
+	return logpostFn(par, temp, 0, llvec, pgvec, rpvec);
 }
 
 // Shortened evaluation of logpostFn; fix temp==1 and evaluate ll does not include prior on nu
 double lpFn1(double *par, double *pgvec){
-	return logpostFn(par, 1.0, 1, llvec, pgvec, ttvec);
+	return logpostFn(par, 1.0, 1, llvec, pgvec, rpvec);
 }
 
 //---------Function for performing Bayesian Quantile Density Estimation--------//
@@ -852,7 +836,7 @@ void BJQR(double *par, double *xVar, double *yVar, int *status, double *weights,
     Q0Neg = vect(L);
     bNeg = mymatrix(p, L);
     llvec = vect(n);
-    ttvec = vect(n);
+    rpvec = vect(n);
     pgvec = vect(ngrid*(p+1));
     zeta0_tick = ivect(L);
     zeta0_dist = vect(L);
@@ -954,11 +938,11 @@ double *par0;
 // Function to be maximized over sigma when finding starting sigma values
 double lpFn2_noX(double sigma){
     par0[sig_pos] = sigma;
-    return logpostFn_noX(par0, 1.0, 0, llvec, pgvec, ttvec);
+    return logpostFn_noX(par0, 1.0, 0, llvec, pgvec, rpvec);
 }
 double lpFn2(double sigma){
 	par0[sig_pos] = sigma;
-	return logpostFn(par0, 1.0, 0, llvec, pgvec, ttvec);
+	return logpostFn(par0, 1.0, 0, llvec, pgvec, rpvec);
 }
 
 void INIT_noX(double *par, double *yVar, int *status, double *weights, double *hyper, int *dim, double *gridpars, double *tauG, double *siglim, int *distribution){
@@ -1013,7 +997,7 @@ void INIT_noX(double *par, double *yVar, int *status, double *weights, double *h
     Q0Pos = vect(L);
     Q0Neg = vect(L);
     llvec = vect(n);
-    ttvec = vect(n);
+    rpvec = vect(n);
     pgvec = vect(ngrid*(p+1));
     zeta0_tick = ivect(L);
     zeta0_dist = vect(L);
@@ -1105,7 +1089,7 @@ void INIT(double *par, double *xVar, double *yVar, int *status, double *weights,
 	Q0Neg = vect(L);
 	bNeg = mymatrix(p, L);
 	llvec = vect(n);
-	ttvec = vect(n);
+	rpvec = vect(n);
 	pgvec = vect(ngrid*(p+1));
         zeta0_tick = ivect(L);
         zeta0_dist = vect(L);
@@ -1128,7 +1112,7 @@ void INIT(double *par, double *xVar, double *yVar, int *status, double *weights,
 //----------------Functions for post MCMC evaluation of Deviance--------------//
 
 
-void DEV_noX(double *par, double *yVar, int *status, double *weights, double *hyper, int *dim, double *gridpars, double *tauG, double *devsamp, double *llsamp, double *pgsamp, double *ttsamp){
+void DEV_noX(double *par, double *yVar, int *status, double *weights, double *hyper, int *dim, double *gridpars, double *tauG, double *devsamp, double *llsamp, double *pgsamp, double *rpsamp){
     
     int i, k, l;
     
@@ -1186,7 +1170,7 @@ void DEV_noX(double *par, double *yVar, int *status, double *weights, double *hy
     reach = 0;
     int iter, reach2 = 0, reach3 = 0;
     for(iter = 0; iter < niter; iter++){
-        devsamp[iter] = -2.0 * logpostFn_noX(par + reach, 1.0, 1, llsamp + reach2, pgsamp + reach3, ttsamp + reach2);
+        devsamp[iter] = -2.0 * logpostFn_noX(par + reach, 1.0, 1, llsamp + reach2, pgsamp + reach3, rpsamp + reach2);
         reach += npar; reach2 += n; reach3 += ngrid;
     }
 }
@@ -1194,7 +1178,7 @@ void DEV_noX(double *par, double *yVar, int *status, double *weights, double *hy
 
 // Function to calculate post-hoc the Deviance at each iteration; 
 // called within the summary.qrjoint function in R
-void DEV(double *par, double *xVar, double *yVar, int *status, double *weights, int *toShrink, double *hyper, int *dim, double *gridpars, double *tauG, double *devsamp, double *llsamp, double *pgsamp, double *ttsamp){
+void DEV(double *par, double *xVar, double *yVar, int *status, double *weights, int *toShrink, double *hyper, int *dim, double *gridpars, double *tauG, double *devsamp, double *llsamp, double *pgsamp, double *rpsamp){
 	
 	int i, j, k, l;
 	
@@ -1267,7 +1251,7 @@ void DEV(double *par, double *xVar, double *yVar, int *status, double *weights, 
 	reach = 0;
 	int iter, reach2 = 0, reach3 = 0;
 	for(iter = 0; iter < niter; iter++){
-		devsamp[iter] = -2.0 * logpostFn(par + reach, 1.0, 1, llsamp + reach2, pgsamp + reach3, ttsamp + reach2);
+		devsamp[iter] = -2.0 * logpostFn(par + reach, 1.0, 1, llsamp + reach2, pgsamp + reach3, rpsamp + reach2);
 		reach += npar; reach2 += n; reach3 += ngrid * (p+1);
 	}
 }
@@ -1329,10 +1313,10 @@ void PRED_noX(double *par, double *yGrid, double *hyper, int *dim, double *gridp
     zeta0_dist = vect(L);
     
     reach = 0;
-    double lldummy, *pgdummy = vect(ngrid), *ttdummy = vect(n);
+    double lldummy, *pgdummy = vect(ngrid), *rpdummy = vect(n);
     int iter, reach2 = 0, reach3 = 0;
     for(iter = 0; iter < niter; iter++){
-        lldummy = logpostFn_noX(par + reach, 1.0, 1, logdenssamp + reach2, pgdummy, ttdummy);
+        lldummy = logpostFn_noX(par + reach, 1.0, 1, logdenssamp + reach2, pgdummy, rpdummy);
         reach += npar; reach2 += n; reach3 += ngrid;
     }
 }
@@ -1985,7 +1969,7 @@ double find_tau_up(double target, double baseline, double a, double b, double ta
 
 // Given proportion and lower & upper derivatives at delta grid, approximates derivative of
 // quantile function at y for likelihood contribution; use in conjunction with prop_tau
-double part_trape_tt(double loc, double a, double b, double taua, double taub){
+double part_trape_rp(double loc, double a, double b, double taua, double taub){
   return ((b*(loc - taua)/(taub - taua) + a*(taub - loc)/(taub - taua)));
 }
 
