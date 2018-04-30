@@ -707,7 +707,8 @@ coef.qrjoint <- function(object, burn.perc = 0.5, nmc = 200, plot = FALSE, show.
     dimnames(beta.samp) <- list(tau=tau.g, beta=plot.titles, iter=1:length(ss))
     invisible(list(beta.samp = beta.samp, beta.est = beta.hat))
     
-    parametric.list <- rbind(beta.samp[seq(mid.red, (p+1)*L, L), ],
+    mid.red <- which(tau.g == object$tau.g[mid])
+    parametric.list <- rbind(beta.samp[mid.red, , ,drop=TRUE],
           sigma = sigFn(pars[nknots * (p+1) + (p+1) + 1,ss], a.sig),	
           nu = nuFn(pars[(nknots + 1) * (p+1) + 2,ss]))	
     dimnames(parametric.list)[[1]][1 + 0:p] <- c("Intercept", object$xnames)	
@@ -888,9 +889,8 @@ summary.qde <- function(object, ntrace = 1000, burn.perc = 0.5, plot.dev = TRUE,
         
         npar <- length(object$par)
         image(1:npar, 1:npar, cor(theta), xlab = "Parameter index", ylab = "Parameter index", main = "Parameter correlation")
-        
+        suppressWarnings(par(cur.par,no.readonly = TRUE)) 
     }
-    suppressWarnings(par(cur.par,no.readonly = TRUE))
     invisible(list(deviance = deviance, pg = pg, prox = prox.samp, ll = ll, rp=rp, waic = fit.waic))
 }
 
