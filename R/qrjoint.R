@@ -1,22 +1,3 @@
-# Note 5/19/16 documentation notes
-# Examples in "don't run" should be modified/removed.
-
-# Note 6/13/16 code note
-# fit$tau.g -- I run this with increment = 0.05 and the .9000 value prints as .9000 but is not evaluating
-# to true when tau.g==.9
-
-# Note 7/25/16
-# Modified so beta.samp and best.est object returned from coef.qrjoint are three dimensional array.
-# Manual needs changing to reflect.
-
-# Note 8/10/16
-# Confusing to have this list of the kap object (which becomes a.kap)
-# Documentation does not clarify nkap.
-# a.kap has two sets of defaults.  Need to make consistent
-
-# Note 10/19/16
-# Built predict.qrjoint needs documentation
-
 ###################################################################
 
 qrjoint <- function(formula, data, nsamp = 1e3, thin = 10, cens = NULL,
@@ -46,6 +27,7 @@ qrjoint <- function(formula, data, nsamp = 1e3, thin = 10, cens = NULL,
     m <- match(c("formula", "data"), names(mf), 0L)
     mf <- mf[c(1L, m)]
     mf$drop.unused.levels <- TRUE
+    #mf$na.action <- "na.fail"   # current implementation is model.frame default of "na.omit" no error/warning given
     mf[[1L]] <- quote(stats::model.frame)
     mf <- eval(mf, parent.frame())
     mt <- attr(mf, "terms")
@@ -57,6 +39,7 @@ qrjoint <- function(formula, data, nsamp = 1e3, thin = 10, cens = NULL,
     stop("Model formula must contain at least one non-intercept term. See 'qde' formula for density estimation.")
     
     y <- model.response(mf, "numeric")
+    if(length(dim(y))>1)  stop("Model response must be univariate.")
     x <- model.matrix(mt, mf)[,-1,drop=FALSE]
     n <- nrow(x)
     p <- ncol(x)
@@ -102,7 +85,7 @@ qrjoint <- function(formula, data, nsamp = 1e3, thin = 10, cens = NULL,
     # set priors to defaults if not specified
     a.sig <- hyper$sig; if(is.null(a.sig)) a.sig <- c(.1, .1)
     a.lam <- hyper$lam; if(is.null(a.lam)) a.lam <- c(6, 4)
-    a.kap <- hyper$kap; if(is.null(a.kap)) a.kap <- c(1.5, 1.5, 1); a.kap <- matrix(a.kap, nrow = 3); nkap <- ncol(a.kap); a.kap[3,] <- log(a.kap[3,])
+    a.kap <- hyper$kap; if(is.null(a.kap)) a.kap <- c(0.1, 0.1, 1); a.kap <- matrix(a.kap, nrow = 3); nkap <- ncol(a.kap); a.kap[3,] <- log(a.kap[3,])
     hyper.reduced <- c(a.sig, c(a.kap))
 	
     # Create grid-discretized lambdas; retain sufficient overlap to get good mixing.
@@ -130,7 +113,7 @@ qrjoint <- function(formula, data, nsamp = 1e3, thin = 10, cens = NULL,
         K0 <- K0 + prior.grid[i] * K.knot
     }
     t2 <- Sys.time()
-    cat("Matrix calculation time per 1e3 iterations =", round(1e3 * as.numeric(t2 - t1), 2), "\n")
+    #cat("Matrix calculation time per 1e3 iterations =", round(1e3 * as.numeric(t2 - t1), 2), "\n")
 	
     ## create list of parameters to be passed to c
     # n: number of observations
@@ -144,14 +127,17 @@ qrjoint <- function(formula, data, nsamp = 1e3, thin = 10, cens = NULL,
     niter <- nsamp * thin
     dimpars <- c(n, p, L, mid - 1, nknots, ngrid, ncol(a.kap), niter, thin, nsamp)
     
-    # One supported option: use prior to initialize MC iteration
+    # First supported option: using prior to initialize MC iteration
     if(par[1] == "prior") {
         par <- rep(0, (nknots+1) * (p+1) + 2)   # vector to hold all parameters
         if(fix.nu) par[(nknots+1) * (p+1) + 2] <- nuFn.inv(fix.nu) # nu in last slot of par
         
         # Get rq beta coefficients for each tau in grid. Then use 5th degree b-spline
         # to estimate curve for each beta coefficient
-        beta.rq <- sapply(tau.g, function(a) return(coef(suppressWarnings(rq(y ~ x, tau = a, weights = wt)))))   # THIS COULD BE DONE WITH tau=tau.g
+        # "dither" slightly perturbs responses in order to avoid potential degeneracy
+        # of dual simplex algorithm (present with large number of ties in y) and "hanging"
+        # of the rq Fortran code
+        beta.rq <- sapply(tau.g, function(a) return(coef(suppressWarnings(rq(dither(y) ~ x, tau = a, weights = wt)))))   # THIS COULD BE DONE WITH tau=tau.g
         v <- bs(tau.g, df = 5)
 		
         # over tau and per coefficient get smoothed fits through data (ie independently estimated quantiles);
@@ -176,7 +162,6 @@ qrjoint <- function(formula, data, nsamp = 1e3, thin = 10, cens = NULL,
             R <- matrix(gridmats[L*nknots + 1:(nknots*nknots),lam.ix], nknots, nknots)
             z <- sqrt(kapsq) * c(crossprod(R, rnorm(nknots)))
             par[(i - 1) * nknots + 1:nknots] <- z - mean(z) # centered and placed in sets of length nknots one after another for p+1 covariates
-            
         }
         
         # get betas associated with these prior params & corresponding quantile estimate (centered around median)
@@ -195,7 +180,7 @@ qrjoint <- function(formula, data, nsamp = 1e3, thin = 10, cens = NULL,
         # Initialize at a model space approximation of the estimates from rq
         par <- rep(0, (nknots+1) * (p+1) + 2)
         
-        beta.rq <- sapply(tau.g, function(a) return(coef(suppressWarnings(rq(y~ x, tau = a, weights = wt)))))
+        beta.rq <- sapply(tau.g, function(a) return(coef(suppressWarnings(rq(dither(y)~ x, tau = a, weights = wt)))))
         v <- bs(tau.g, df = 5)
         rq.lm <- apply(beta.rq, 1, function(z) return(coef(lm(z ~ v)))) # smooth though non-monotonic estimates
         
@@ -254,7 +239,7 @@ qrjoint <- function(formula, data, nsamp = 1e3, thin = 10, cens = NULL,
         tau.g = as.double(tau.g), siglim = as.double(sigFn.inv(c(1.0 * infl * sigma, 10.0 * infl * sigma), a.sig)), fbase.choice = as.integer(fbase.choice))
         
         par <- oo$par
-    } else if (par[1] == "noX") {
+    } else if (par[1] == "noX") { # Initialization without regard to X, will definitely work
         fit0 <- qde(y, nsamp = 1e2, thin = 10, cens = cens, wt = wt, nknots = nknots, hyper = hyper, prox.range = prox.range, fbase = fbase, fix.nu = fix.nu, verbose = FALSE)
         par <- rep(0, (nknots + 1) * (p + 1) + 2)
         par[c(1:nknots, nknots * (p + 1) + 1, (nknots + 1) * (p + 1) + 1:2)] <- fit0$par
@@ -304,7 +289,6 @@ qrjoint <- function(formula, data, nsamp = 1e3, thin = 10, cens = NULL,
         for(i in 1:npar) blocks[[i]][i] <- TRUE
     }
     
-    
     nblocks <- length(blocks)
     if(fix.nu) for(j in 1:nblocks) blocks[[j]][(nknots+1) * (p+1) + 2] <- FALSE
     
@@ -316,13 +300,13 @@ qrjoint <- function(formula, data, nsamp = 1e3, thin = 10, cens = NULL,
         if(substr(blocking, 1, 3) == "std"){
             for(i in 1:(p+1)) blocks.S[[i]][1:nknots, 1:nknots] <- K0
             if(as.numeric(substr(blocking, 4,5)) > 1){
-                blocks.S[[p + 2]] <- summary(suppressWarnings(rq(y ~ x, tau = 0.5, weights = wt)), se = "boot", cov = TRUE)$cov
+                blocks.S[[p + 2]] <- summary(suppressWarnings(rq(dither(y) ~ x, tau = 0.5, weights = wt)), se = "boot", cov = TRUE)$cov
                 blocks.S[[p + 3]] <- matrix(c(1, 0, 0, .1), 2, 2)
             }
             if(as.numeric(substr(blocking, 4,5)) == 5){
                 slist <- list(); length(slist) <- p + 3
                 for(i in 1:(p+1)) slist[[i]] <- K0
-                slist[[p+2]] <- summary(suppressWarnings(rq(y ~ x, tau = 0.5, weights = wt)), se = "boot", cov = TRUE)$cov
+                slist[[p+2]] <- summary(suppressWarnings(rq(dither(y) ~ x, tau = 0.5, weights = wt)), se = "boot", cov = TRUE)$cov
                 slist[[p+3]] <- matrix(c(1, 0, 0, .1), 2, 2)
                 blocks.S[[p + 4]] <- as.matrix(bdiag(slist))
             }
@@ -410,7 +394,7 @@ qde <- function(y, nsamp = 1e3, thin = 10, cens = rep(0,length(y)),
 	
 	a.sig <- hyper$sig; if(is.null(a.sig)) a.sig <- c(.1, .1)
 	a.lam <- hyper$lam; if(is.null(a.lam)) a.lam <- c(6, 4)
-	a.kap <- hyper$kap; if(is.null(a.kap)) a.kap <- c(1.5, 1.5, 1); a.kap <- matrix(a.kap, nrow = 3); nkap <- ncol(a.kap); a.kap[3,] <- log(a.kap[3,])
+	a.kap <- hyper$kap; if(is.null(a.kap)) a.kap <- c(0.1, 0.1, 1); a.kap <- matrix(a.kap, nrow = 3); nkap <- ncol(a.kap); a.kap[3,] <- log(a.kap[3,])
 	hyper.reduced <- c(a.sig, c(a.kap))
 	
 	prox.grid <- proxFn(max(prox.range), min(prox.range), 0.5)
@@ -672,14 +656,6 @@ update.qde <- function(object, nadd, append = TRUE, ...){
 }
 
 #########################################################################
-# WIP CODE
-
-# To do: have some function return X on its original scale,
-# either coef.qrjoint or predict.qrjoint
-
-# To do: separate out plotting from coef.qrjoint function (eg. plot.coef). 
-# will require some work since plotting is done via "getbands" function
-# and therefore entangled
 
 coef.qrjoint <- function(object, burn.perc = 0.5, nmc = 200, plot = FALSE, show.intercept = TRUE, reduce = TRUE, ...){
 	nsamp <- object$dim[10]                      # number of iterations retains in sample
@@ -785,10 +761,10 @@ summary.qrjoint <- function(object, ntrace = 1000, burn.perc = 0.5, plot.dev = T
 	  # Calcuate deviance
     sm <- .C("DEV", pars = as.double(pars[,ss]), x = as.double(object$x), y = as.double(object$y), cens = as.integer(object$cens), wt = as.double(object$wt),
 			 shrink = as.integer(object$shrink), hyper = as.double(object$hyper), dim = as.integer(dimpars), gridmats = as.double(object$gridmats), tau.g = as.double(object$tau.g),
-			 devsamp = double(length(ss)), llsamp = double(length(ss)*n), pgsamp = double(length(ss)*ngrid*(p+1)), ttsamp = double(length(ss)*n))
+			 devsamp = double(length(ss)), llsamp = double(length(ss)*n), pgsamp = double(length(ss)*ngrid*(p+1)), rpsamp = double(length(ss)*n))
 	deviance <- sm$devsamp
 	ll <- matrix(sm$llsamp, ncol = length(ss))
-	tt <- matrix(sm$ttsamp, ncol = length(ss))
+	rp <- matrix(sm$rpsamp, ncol = length(ss))
 	fit.waic <- waic(ll[,post.burn])
 	pg <- matrix(sm$pgsamp, ncol = length(ss))
 	prox.samp <- matrix(NA, p+1, length(ss))
@@ -841,7 +817,7 @@ summary.qrjoint <- function(object, ntrace = 1000, burn.perc = 0.5, plot.dev = T
 		image(1:npar, 1:npar, cor(theta), xlab = "Parameter index", ylab = "Parameter index", main = "Parameter correlation")
 		suppressWarnings(par(cur.par,no.readonly = TRUE))
 	}
-	invisible(list(deviance = deviance, pg = pg, prox = prox.samp, ll = ll, tt = tt, waic = fit.waic))
+	invisible(list(deviance = deviance, pg = pg, prox = prox.samp, ll = ll, rp = rp, waic = fit.waic))
 }
 
 summary.qde <- function(object, ntrace = 1000, burn.perc = 0.5, plot.dev = TRUE, more.details = FALSE, ...){
@@ -856,10 +832,10 @@ summary.qde <- function(object, ntrace = 1000, burn.perc = 0.5, plot.dev = TRUE,
     n <- object$dim[1]; p <- 0; ngrid <- object$dim[5]
     sm <- .C("DEV_noX", pars = as.double(pars[,ss]), y = as.double(object$y), cens = as.integer(object$cens), wt = as.double(object$wt),
 			 hyper = as.double(object$hyper), dim = as.integer(dimpars), gridmats = as.double(object$gridmats), tau.g = as.double(object$tau.g),
-             devsamp = double(length(ss)), llsamp = double(length(ss)*n), pgsamp = double(length(ss)*ngrid), ttsamp=double(length(ss)*n))
+             devsamp = double(length(ss)), llsamp = double(length(ss)*n), pgsamp = double(length(ss)*ngrid), rpsamp=double(length(ss)*n))
     deviance <- sm$devsamp
     ll <- matrix(sm$llsamp, ncol = length(ss))
-    tt <- matrix(sm$ttsamp, ncol = length(ss))
+    rp <- matrix(sm$rpsamp, ncol = length(ss))
     fit.waic <- waic(ll[,post.burn])
     pg <- matrix(sm$pgsamp, ncol = length(ss))
     prox.samp <- object$prox[apply(pg[1:ngrid,], 2, function(pr) sample(length(pr), 1, prob = pr))]
@@ -907,7 +883,7 @@ summary.qde <- function(object, ntrace = 1000, burn.perc = 0.5, plot.dev = TRUE,
         
     }
     suppressWarnings(par(cur.par,no.readonly = TRUE))
-    invisible(list(deviance = deviance, pg = pg, prox = prox.samp, ll = ll, tt=tt, waic = fit.waic))
+    invisible(list(deviance = deviance, pg = pg, prox = prox.samp, ll = ll, rp=rp, waic = fit.waic))
 }
 
 #########################################################################
@@ -930,7 +906,7 @@ predict.qrjoint <- function(object, newdata=NULL, summarize=TRUE, burn.perc = 0.
   } else{
     
     Xpred <- model.matrix(object$terms, data=newdata)
-    # Needs error catching for NA's in newdata dataframe
+    # Would be good to add error catching for NA's in newdata dataframe
   }
   npred <- dim(Xpred)[1]
   
@@ -945,7 +921,6 @@ predict.qrjoint <- function(object, newdata=NULL, summarize=TRUE, burn.perc = 0.
   return(pred)
 } 
 
-# NEEDS TO BE MADE SIMILAR TO predict.qrjoint.
 predict.qde <- function(object, burn.perc = 0.5, nmc = 200, yRange = range(object$y), yLength = 401){
     thin <- object$dim[8]
     nsamp <- object$dim[9]
@@ -1109,7 +1084,7 @@ ppFn0 <- function(w.knot, gridmats, L, nknots, ngrid){
 		R <- matrix(gridmats[L*nknots + 1:(nknots*nknots),i], nrow = nknots)
 		r <- sum.sq(backsolve(R, w.knot, transpose = TRUE))
 		w.grid[,i] <- colSums(A * w.knot)
-		lpost.grid[i] <- -(0.5*nknots+1.5)*log1p(0.5*r/1.5) - gridmats[nknots*(L+nknots)+1,i] + gridmats[nknots*(L+nknots)+2,i]		
+		lpost.grid[i] <- -(0.5*nknots+0.1)*log1p(0.5*r/0.1) - gridmats[nknots*(L+nknots)+1,i] + gridmats[nknots*(L+nknots)+2,i]		
 	}
 	lpost.sum <- logsum(lpost.grid)
 	post.grid <- exp(lpost.grid - lpost.sum)
