@@ -361,12 +361,12 @@ double logpostFn_noX(double *par, double temp, int llonly, double *ll, double *p
                     QPos = Q0Pos[l];
                 }
                 if(l == L - mid - 1) {
-                    rp[i] = F0(Q0tail(taugrid[L-2], nu) + (resLin[i] - QPosold)/sigmat1, nu) ;
-                    switch (cens[i]) {
-                      case 1: ll[i] = log(1.0 - rp[i]); break;
-                      case 2: ll[i] = log(rp[i]); break;
-                      default:ll[i] = lf0tail(Q0tail(taugrid[L-2], nu) + (resLin[i] - QPosold)/sigmat1, nu) - log(sigmat1); break;
-                    }
+                  rp[i] = F0(Q0tail(taugrid[L-2], nu) + (resLin[i] - QPosold)/sigmat1, nu) ;
+                  switch (cens[i]) {
+                    case 1: ll[i] = log(1.0 - rp[i]); break;
+                    case 2: ll[i] = log(rp[i]); break;
+                    default:ll[i] = lf0tail(Q0tail(taugrid[L-2], nu) + (resLin[i] - QPosold)/sigmat1, nu) - log(sigmat1); break;
+                  }
                 } else {
                   rp[i] = find_tau_lo(resLin[i], QPosold, b0dot[mid+l-1], b0dot[mid+l], taugrid[mid+l-1], taugrid[mid+l]);
                   switch (cens[i]) {
@@ -386,14 +386,14 @@ double logpostFn_noX(double *par, double temp, int llonly, double *ll, double *p
                 }
                 if(l == mid) {
                   rp[i] = F0(Q0tail(taugrid[1], nu) + (resLin[i] + QNegold)/sigmat2, nu) ;
-                    switch (cens[i]) {
-                      case 1: ll[i] = log(1.0 - rp[i]); break;
-                      case 2: ll[i] = log(rp[i]); break;
-                      default:ll[i] = lf0tail(Q0tail(taugrid[1], nu) + (resLin[i] + QNegold)/sigmat2, nu) - log(sigmat2); break;
-                    }
+                  switch (cens[i]) {
+                    case 1: ll[i] = log(1.0 - rp[i]); break;
+                    case 2: ll[i] = log(rp[i]); break;
+                    default:ll[i] = lf0tail(Q0tail(taugrid[1], nu) + (resLin[i] + QNegold)/sigmat2, nu) - log(sigmat2); break;
+                  }
                 } else {
                   rp[i] = find_tau_up(resLin[i], -QNegold, b0dot[mid-l], b0dot[mid-l+1], taugrid[mid-l], taugrid[mid-l+1]);
-                    switch (cens[i]) {
+                  switch (cens[i]) {
                     case 1: ll[i] = log(1.0 - rp[i]); break;
                     case 2: ll[i] = log(rp[i]); break;
                     default:ll[i] = -log(part_trape_rp(rp[i], b0dot[mid-l], b0dot[mid-l+1], taugrid[mid-l], taugrid[mid-l+1])); break;
@@ -540,28 +540,20 @@ double logpostFn(double *par, double temp, int llonly, double *ll, double *pg, d
                 // if point located above largest grid tau...
                 if(l == L - mid - 1){
                   rp[i] = F0(Q0tail(taugrid[L-2], nu) + (resLin[i] - QPosold)/sigmat1, nu) ;
-                    if(cens[i]>0){
-                        if(cens[i]==1){
-                            ll[i] = log(1.0 - rp[i]); 
-                        } else {           
-                            ll[i] = log(rp[i]);		  
-                        }
-                    } else {
-                        ll[i] = lf0tail(Q0tail(taugrid[L-2], nu) + (resLin[i] - QPosold)/sigmat1, nu) - log(sigmat1);
+                    switch (cens[i]) {
+                    case 1: ll[i] = log(1.0 - rp[i]); break;
+                    case 2: ll[i] = log(rp[i]); break;
+                    default:ll[i] = lf0tail(Q0tail(taugrid[L-2], nu) + (resLin[i] - QPosold)/sigmat1, nu) - log(sigmat1); break;
                     }
                 }  else {
                   // if located anywhere in estimated grid...
                   for(qdot_lo = b0dot[mid+l-1], j = 0; j < p; j++) qdot_lo += bdot[j][mid+l-1] * x[i][j];
                   for(qdot_up = b0dot[mid+l], j = 0; j < p; j++) qdot_up += bdot[j][mid+l] * x[i][j];
                   rp[i] = find_tau_lo(resLin[i], QPosold, qdot_lo, qdot_up, taugrid[mid+l-1], taugrid[mid+l]);
-                  if(cens[i]>0){
-                      if(cens[i]==1){     // right censored data contribution: log(probability Y> y_i = 1 - tau_i)
-                          ll[i] = log(1.0 - rp[i]);
-                      } else {            // left censored data contribution
-                          ll[i] = log(rp[i]);
-                      }
-                  } else {                // Otherwise estimate log (1/Q at tau*)
-                    ll[i] = -log(part_trape_rp(rp[i], qdot_lo, qdot_up, taugrid[mid+l-1], taugrid[mid+l]));
+                  switch (cens[i]) {
+                    case 1: ll[i] = log(1.0 - rp[i]); break;
+                    case 2: ll[i] = log(rp[i]); break;
+                    default:ll[i] = -log(part_trape_rp(rp[i], qdot_lo, qdot_up, taugrid[mid+l-1], taugrid[mid+l])); break;
                   }
                 }
             } else {
@@ -576,27 +568,19 @@ double logpostFn(double *par, double temp, int llonly, double *ll, double *pg, d
                 }
                 if(l == mid){               // tail
                     rp[i] = F0(Q0tail(taugrid[1], nu) + (resLin[i] + QNegold)/sigmat2, nu) ;
-                    if(cens[i]>0){
-                        if(cens[i]==1){     // right censored
-                          ll[i] = log(1.0 - rp[i]); 
-                        } else {            // left censored
-                          ll[i] = log(rp[i]);	
-                        }
-                    } else {
-                      ll[i] = lf0tail(Q0tail(taugrid[1], nu) + (resLin[i] + QNegold)/sigmat2, nu) - log(sigmat2);
+                    switch (cens[i]) {
+                      case 1: ll[i] = log(1.0 - rp[i]); break;
+                      case 2: ll[i] = log(rp[i]); break;
+                      default:ll[i] = lf0tail(Q0tail(taugrid[1], nu) + (resLin[i] + QNegold)/sigmat2, nu) - log(sigmat2); break;
                     }
                 } else {
                     for(qdot_lo = b0dot[mid-l], j = 0; j < p; j++) qdot_lo += bdot[j][mid-l] * x[i][j];
                     for(qdot_up = b0dot[mid-l+1], j = 0; j < p; j++) qdot_up += bdot[j][mid-l+1] * x[i][j];
                     rp[i] = find_tau_up(resLin[i], -QNegold, qdot_lo, qdot_up, taugrid[mid-l], taugrid[mid-l+1]); //2
-                    if(cens[i]>0){
-                        if(cens[i]==1){     // right censored
-                            ll[i] = log(1.0 - rp[i]);
-                        } else {            // left censored
-                            ll[i] = log(rp[i]);
-                        }                    
-                    } else {
-                      ll[i] = -log(part_trape_rp(rp[i], qdot_lo, qdot_up, taugrid[mid-l], taugrid[mid-l+1]));
+                    switch (cens[i]) {
+                      case 1: ll[i] = log(1.0 - rp[i]); break;
+                      case 2: ll[i] = log(rp[i]); break;
+                      default:ll[i] = -log(part_trape_rp(rp[i], qdot_lo, qdot_up, taugrid[mid-l], taugrid[mid-l+1])); break;
                     }
                 }
             }			
@@ -1972,22 +1956,3 @@ double find_tau_up(double target, double baseline, double a, double b, double ta
 double part_trape_rp(double loc, double a, double b, double taua, double taub){
   return ((b*(loc - taua)/(taub - taua) + a*(taub - loc)/(taub - taua)));
 }
-
-
-
-// This is the former interpolation of deriv Q, which used a quadratic
-// approximation to interpolate between grid points at each data point.
-// This is slighlty more robust than the version of 1.0-5, as it has a linear
-// approximation built in for numeric stability. h is the proportion of that way that
-// y's response proportion is between gridpoints taua and taub.
-// Removed when liklihood function modified to return estimated taus, as that version
-// completely revised how qdot_lo and qdot_up are used in the QNeg region
-// double part_trape(double target, double baseline, double a, double b, double Delta){
-//  double h;
-//  if (fabs(b-a)>1.0e-15){
-//    h = (-a*Delta + sqrt(a*a * Delta*Delta + 2*Delta*(b-a)*(target - baseline)))/((b-a)*Delta);
-//  } else { // case where slopes close to equal -- do linear interpolant
-//    h = (target - baseline)/(a*Delta);
-//  }
-//  return ((1.0 - h)*a + h*b);
-//}
