@@ -706,6 +706,14 @@ coef.qrjoint <- function(object, burn.perc = 0.5, nmc = 200, plot = FALSE, show.
     dimnames(beta.hat) <- list(tau=tau.g, beta=plot.titles, summary=c("b.lo", "b.med", "b.hi"))
     dimnames(beta.samp) <- list(tau=tau.g, beta=plot.titles, iter=1:length(ss))
     invisible(list(beta.samp = beta.samp, beta.est = beta.hat))
+    
+    parametric.list <- rbind(beta.samp[seq(mid.red, (p+1)*L, L), ],
+          sigma = sigFn(pars[nknots * (p+1) + (p+1) + 1,ss], a.sig),	
+          nu = nuFn(pars[(nknots + 1) * (p+1) + 2,ss]))	
+    dimnames(parametric.list)[[1]][1 + 0:p] <- c("Intercept", object$xnames)	
+    gamsignu <- t(apply(parametric.list, 1, quantile, pr = c(0.5, 0.025, 0.975)))	
+    dimnames(gamsignu)[[2]] <- c("Estimate", "Lo95%", "Up95%")	
+    invisible(list(beta.samp = beta.samp, beta.est = beta.hat, parametric = gamsignu))
 }
 
 
