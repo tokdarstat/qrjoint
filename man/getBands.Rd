@@ -1,5 +1,5 @@
 \name{getBands}
-\Rdversion{0.1-1}
+\Rdversion{2.0}
 \alias{getBands}
 \title{Posterior Credible Bands}
 \description{Calculate and display credible bands of a vector of parameters from a sample of draws. Most suitable when the vector represents a discretized version of a function.} 

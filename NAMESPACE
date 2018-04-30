@@ -1,4 +1,4 @@
-useDynLib("qrjoint")
+useDynLib("qrjointEB")
 
 # Export all functions listed below
 export(
@@ -12,6 +12,7 @@ export(
 S3method(update, qrjoint)
 S3method(summary, qrjoint)
 S3method(coef, qrjoint)
+S3method(predict, qrjoint)
 S3method(update, qde)
 S3method(summary, qde)
 S3method(coef, qde)

@@ -1,32 +1,31 @@
 \name{qrjoint}
-\Rdversion{0.1-1}
+\Rdversion{2.0}
 \alias{qrjoint}
 \alias{update.qrjoint}
 \title{Joint Estimation of Linear Quantile Planes}
-\description{ Estimate intercept and slope functions within a joint linear regression model of the quantiles, with possible right censoring of the response.
+\description{ Estimate intercept and slope functions within a joint linear regression model of the quantiles, with possible right or left censoring of the response.
 } 
 \usage{ 
-qrjoint(x, y, nsamp = 1e3, thin = 10, cens = rep(0,length(y)), 
+qrjoint(formula, data, nsamp = 1e3, thin = 10, cens = rep(0,length(y)), 
     wt = rep(1,length(y)), incr = 0.01, par = "prior", nknots = 6,
     hyper = list(sig = c(.1,.1), lam = c(6,4), kap = c(.1,.1,1)), 
     shrink = FALSE, prox.range = c(.2,.95), acpt.target = 0.15, 
     ref.size = 3, blocking = "std5", temp = 1, expo = 2, 
-    blocks.mu, blocks.S, fix.nu=FALSE, fbase = c("t", "unif"),
-    verbose = TRUE)
+    blocks.mu, blocks.S, fix.nu=FALSE, fbase = c("t", "unif"), verbose = TRUE)
     
 \method{update}{qrjoint}(object, nadd, append = TRUE, ...)
 } 
 \arguments{
-\item{x}{numeric design matrix of explanatory variables (do not include a column of ones). Could be given as a data frame. Rows are observations and columns are variables. Could be given as a dimensionless vector when there is a single predictor.}
-\item{y}{numeric vector of response data.}
+\item{formula}{an object of class "formula": a symbolic description of the model to be fitted. It must include at least one predictor.}
+\item{data}{a data frame containing variables in the model.}
 \item{nsamp}{number of posterior samples to be saved; defaults to 1000.}
 \item{thin}{thinning rate for the Markov chain sampler -- one posterior sample is saved per \code{thin} iterations. Defaults to 10. The Markov chain sampler runs for a total of \code{nsamp * thin} many iterations.}
-\item{cens}{censoring status of response. Must be a vector of 0s and 1s of length same as length(y), with 1 indicating right censoring, and, 0 indicating no censoring. Defaults to all zeros.}
+\item{cens}{censoring status of response. Must be a vector of length NROW(data), with 0 indicating no censoring, 1 indicating right censoring, and 2 indicating left censoring. Defaults to all zeros.}
 \item{wt}{weights attached to the observation units, expected to be non-negative numbers, and defaults to a vector of ones.}
 \item{incr}{tau grid increment. Defaults to 0.01.} 
-\item{par}{character string indicating how the sampler is to be initialized. Three options are currently supported: "prior" to initialize at a random draw from the prior; "RQ" to initialize at a model space approximation of the estimates from \code{\link{rq}}; and, "noX" to initialize at a model with all slope functions being equal to zero, and, the intercept function obtained by fitting \code{qde} to the response data alone.}
+\item{par}{character string indicating how the sampler is to be initialized. Three options are currently supported: "prior" to initialize at a random draw from the prior; "RQ" to initialize at a model space approximation of the estimates from \code{\link{rq}}; and, "noX" to initialize at a model with all slope functions being equal to zero, and the intercept function obtained by fitting \code{qde} to the response data alone.}
 \item{nknots}{number of knots to be used for low rank approximation of the Gaussian process priors. Defaults to 6.}
-\item{hyper}{hyperparameters of the prior distribution. Must be a list with some of all of the following fields: \code{sig}: a two vector giving the parameters of the inverse-gamma distribution on sigma-square that is used when \code{shrink}=TRUE, \code{lam}: a two vector giving the parameters of the beta distribution on proximity = \eqn{\exp(-0.01* \lambda^2)}{exp(-0.01 * lambda^2)}, and \code{kap}:  a vector to be coerced into a \code{3 * nkap} matrix, with \code{nkap} being the number of components in the mixture of gamma prior on \code{kappa}, and each column of the matrix gives the shape, rate and mixing weight of a component.}
+\item{hyper}{hyperparameters of the prior distribution. Must be a list with some of all of the following fields: \code{sig}: a two vector giving the parameters of the inverse-gamma distribution on sigma-square that is used when \code{shrink}=TRUE, \code{lam}: a two vector giving the parameters of the beta distribution on proximity = \eqn{\exp(-0.01* \lambda^2)}{exp(-0.01 * lambda^2)}, and \code{kap}: a vector to be coerced into a \code{3 * nkap} matrix, with \code{nkap} being the number of components in the mixture of gamma prior on \code{kappa}, and each column of the matrix gives the shape, rate and mixing weight of a component.}
 \item{shrink}{for applying shrinkage to gamma[0] and gamma. Defaults to FALSE, in which case a right Haar prior is used on (gamma[0], gamma, sigma2). If TRUE then a horseshoe type prior is used.}
 \item{prox.range}{for specifying the range of length-scale parameter of the Gaussian process prior.}
 \item{acpt.target}{target acceptance rate of the adaptive Metropolis sampler; defaults to 0.15}
@@ -45,7 +44,7 @@ qrjoint(x, y, nsamp = 1e3, thin = 10, cens = rep(0,length(y)),
 \item{...}{no additional arguments are allowed}
 }
 \value{
-\code{qrjoint(x, y, ...)} returns a `qrjoint' class object to be used by \code{\link{update}}, \code{\link{coef}} and \code{\link{summary}}. 
+\code{qrjoint(x, y, ...)} returns a `qrjoint' class object to be used by \code{\link{update.qrjoint}}, \code{\link{coef.qrjoint}} and \code{\link{summary.qrjoint}}. 
 
 \code{update(object,...)} runs additional Markov chain iterations and appends thinned draws to an existing `qrjoint' object \code{object}. All relevant details are inherited from \code{object}.
 
@@ -54,7 +53,7 @@ Returned object is a list containing the following variables.
 \item{par}{latest draw of the parameter vector}
 \item{x}{scaled and centered design matrix}
 \item{y}{response vector}    
-\item{cens}{censoring status vector}
+\item{cens}{censoring status vector, 0=uncensored, 1=right censored, 2=left censored}
 \item{wt}{vector of observation weights}
 \item{shrink}{shrinkage indicator}
 \item{hyper}{completed list of hyper-parameters}
@@ -67,16 +66,21 @@ Returned object is a list containing the following variables.
 \item{blocks.size}{vector of block lengths}
 \item{dmcmcpar}{numeric vector containing details of adaptive MCMC runs, equals c(temp, decay rate of adaptation, vector of target acceptance rates for the blocks, vector of increment scales used in adaptation). Intended strictly for internal use.}
 \item{imcmcpar}{numeric vector containing details of adaptive MCMC runs, equals c(number of parameter blocks, ref.size, indicator on whether details are to be printed during MCMC progress, rate of details printing, a vector of counters needed for printing). Intended strictly for internal use.}
-\item{parsamp}{a long vector containing the parameter draws. Could be coerced into a matrix of dim \code{npar * nsamp}. Intended primarily for use by \code{\link{summary}} and \code{\link{coef}}.}
+\item{parsamp}{a long vector containing the parameter draws. Could be coerced into a matrix of dim \code{npar * nsamp}. Intended primarily for use by \code{\link{summary.qrjoint}} and \code{\link{coef.qrjoint}}.}
 \item{acptsamp}{a long vector containing rates of acceptance statistics for parameter blocks. Could be coerced into a matrix of dim \code{nblocks * nsamp}. Not very informative, because thinning times and adaptation times may not be exactly synced.}
 \item{lpsamp}{vector of log posterior values for the saved MCMC draws.}
 \item{fbase.choice}{integer 1 for "t" and 2 for "unif" base.}
 \item{prox}{vector of proximity (exp(-0.01*lambda^2)) grid values}
 \item{reg.ix}{positions of the regular tau grid on the expanded tail-appended grid}
 \item{runtime}{run time of the MCMC}
+\item{call}{original model call}
+\item{terms}{terms included in model frame}
 }
 
 \details{
+
+A formula has an implied intercept term. This model requires that the intercept term be included; therefore, it cannot be explicitely removed via (y ~ 0 + x) or (y ~ -1 + x) constructs.
+
 The model assumes each conditional quantile of the response is a hyper-plane. The intercept and slope functions (as functons of the response proportion) are estimated under the constraint that the resulting quantile planes are non-crossing over some closed, convex predictor domain. The domain is equated, by default, to the convex hull of the observed predictor vectors. The input argument \code{wt} provides more flexibility in the domain specification. All observation units are used in calculating the convex hull -- but only those with non-zero weights are used in the likelihood evaluation.
 
 In running the MCMC, the following menu choices are available for blocking the parameter vector. Below, \code{p = ncol(X)}.
@@ -111,15 +115,11 @@ plasma$SmokStat <- as.factor(plasma$SmokStat)
 plasma$VitUse <- 3 - plasma$VitUse
 plasma$VitUse <- as.factor(plasma$VitUse)
 
-# creating predictors and response (beta carotene concentration in the plasma)
-X <- model.matrix(BetaPlasma ~ Age + Sex + SmokStat + Quetelet + VitUse + Calories + 
-        Fat + Fiber + Alcohol + Cholesterol + BetaDiet, data = plasma)[,-1]
-Y <- plasma$BetaPlasma
-
-# model fitting with 40 posterior samples from 80 iterations (thin = 2)
-# this is of course for illustration, for practical model fitting you
-# ought to try at least something like nsamp = 500, thin = 20
-fit.qrj <- qrjoint(X, Y, nsamp = 40, thin = 2)
+# Model fitting with 40 posterior samples from 80 iterations (thin = 2) is for
+# illustration only. For practical model fitting, increase iterations, 
+# e.g. nsamp = 500, thin = 20
+fit.qrj <- qrjoint(BetaPlasma ~ Age + Sex + SmokStat + Quetelet + VitUse + Calories + 
+        Fat + Fiber + Alcohol + Cholesterol + BetaDiet, plasma, nsamp = 40, thin = 2)
 summary(fit.qrj, more = TRUE)
 
 \dontrun{
@@ -131,12 +131,9 @@ summary(fit.qrj, more = TRUE)
 \dontrun{
 ### UIS data analysis (with right censoring)
 data(uis)
-y <- uis$Y
-cens <- 1 - uis$CENSOR
-
-X <- model.matrix(~ TREAT + NDT + IV3 + BECK + FRAC + 
-        RACE + AGE + SITE, data = uis)[,-1]
-uis.qrj <- qrjoint(X, y, cens = cens, nsamp = 50, thin = 2, fix.nu = 1e5)
+uis.qrj <- qrjoint(Y ~ TREAT + NDT + IV3 + BECK + FRAC + 
+                       RACE + AGE + SITE , data=uis, cens = (1 - uis$CENSOR), 
+                     nsamp = 50, thin = 2, fix.nu = 1e5)
 summary(uis.qrj, more = TRUE)
 
 betas <- coef(uis.qrj, plot = TRUE, col = "darkgreen")
@@ -144,25 +141,23 @@ tau.grid <- uis.qrj$tau.g[uis.qrj$reg.ix]
 L <- length(tau.grid)
 beta.samp <- betas$beta.samp
 
-
-# survival curve estimation for 9 randomly chosen subjects
-n <- nrow(X)
-ix.sel <- sort(sample(n, 9))
-Xsel <- X[ix.sel,]
-Qsel.gp <- apply(beta.samp, 2, function(b) return(tcrossprod(matrix(b, nrow = L), cbind(1, Xsel))))
-k <- length(ix.sel)
-
+# survival curve estimation for k randomly chosen subjects
+n <- nrow(uis)
+k <- 9
+ix.sel <- sort(sample(n, k))
+Qsel.gp <- predict(uis.qrj, newdata=uis[ix.sel,], summarize=FALSE)
+  
 colRGB <- col2rgb("darkgreen")/255
 colTrans <- rgb(colRGB[1], colRGB[2], colRGB[3], alpha = 0.05)
 par(mfrow = c(3,3), mar = c(4,3,2,1) + .1)
 for(i in 1:k){
-  plot(exp(Qsel.gp[(i-1)*L + 1:L,1]), 1 - tau.grid, ty = "n", ann = FALSE, 
-      bty = "n", xlim = exp(c(2, 8)), ylim = c(0,1), lty = 2, log = "x")
-  for(j in 1:ncol(beta.samp)) 
-      lines(exp(Qsel.gp[(i-1)*L + 1:L,j]), 1 - tau.grid, col = colTrans, lwd = 1)
+  plot(exp(apply(Qsel.gp[i,,],1,mean)), 1 - tau.grid, ty = "n", ann = FALSE, 
+        bty = "n", xlim = exp(c(2, 8)), ylim = c(0,1), lty = 2, log = "x")
+  for(j in 1:dim(beta.samp)[3])
+      lines(exp(Qsel.gp[i,,j]), 1 - tau.grid, col = colTrans, lwd = 1)
   title(xlab = "Return time (days)", ylab = "Survival function", line = 2)
   title(main = bquote(Obs.Id == .(ix.sel[i])))
-  grid()
+  grid()  
 }
 }
 }

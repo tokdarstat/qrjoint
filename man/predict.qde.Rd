@@ -1,7 +1,7 @@
 \name{summary.qde}
-\Rdversion{1.0-5}
+\Rdversion{2.0}
 \alias{predict.qde}
-\title{Posterior predictive Summary for Quantile based Density Estimation}
+\title{Posterior predictive summary for quantile-based density estimation}
 \description{Extract posterior predictive density estimate for \code{\link{qde}}}
 \usage{ 
 \method{predict}{qde}(object, burn.perc = 0.5, nmc = 200, yRange = range(object$y), yLength = 401)

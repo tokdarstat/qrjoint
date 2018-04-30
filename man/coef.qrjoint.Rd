@@ -1,5 +1,5 @@
 \name{coef.qrjoint}
-\Rdversion{1.0-5}
+\Rdversion{2.0}
 \alias{coef.qrjoint}
 \title{Regression Coefficient Extraction from qrjoint Model Fit}
 \description{Post process MCMC output from \code{\link{qrjoint}} to create summaries of intercept and slope function estimates} 
@@ -19,8 +19,8 @@
 \value{
 Extracts posterior draws of intercept and slope functions from saved draws of model parameters. A plot may be obtained if \code{plot = TRUE}. A list is returned invisibly with three fields.
 
-\item{beta.samp}{a matrix with \code{nmc} many columns and \code{(p+1)*length(tau.grid)} many rows.}
-\item{beta.est}{a list of length (p+1), \eqn{j}{j}-th element giving a 3-column matrix of median, 2.5th and 97.5th percentiles of the posterior distribution of \eqn{\beta_j}{{beta}[j]}}
+\item{beta.samp}{a three-dimensional array of posterior samples of \eqn{\beta_j}{{beta}[j]}. Its dimensions are \code{L} (length of tau.grid)  x \code{p+1} (intercept + slopes) x \code{nmc} (retained posterior draws).}
+\item{beta.est}{a three-dimensional array containing posterior summaries (2.5th,  50th, and 97.5th percentiles) of \eqn{\beta_j}{{beta}[j]}. Its dimensions are \code{L} (length of tau.grid)  x \code{p+1} (intercept + slopes) x 3 (posterior summaries).} 
 \item{parametric}{a matrix with 3 columns giving the estimate (posterior median) and the lower and upper end points of the 95\% posterior credible interval for \eqn{\gamma_0}{gamma0}, \eqn{\gamma}{gamma}, \eqn{\sigma}{sigma}, and, \eqn{\nu}{nu}.}
 }
 
@@ -38,17 +38,14 @@ plasma$SmokStat <- as.factor(plasma$SmokStat)
 plasma$VitUse <- 3 - plasma$VitUse
 plasma$VitUse <- as.factor(plasma$VitUse)
 
-# creating predictors and response (beta carotene concentration in the plasma)
-X <- model.matrix(BetaPlasma ~ Age + Sex + SmokStat + Quetelet + VitUse + Calories + 
-        Fat + Fiber + Alcohol + Cholesterol + BetaDiet, data = plasma)[,-1]
-Y <- plasma$BetaPlasma
-
 # model fitting with 50 posterior samples from 100 iterations (thin = 2)
-fit.qrj <- qrjoint(X, Y, 50, 2)
+fit.qrj <- qrjoint(BetaPlasma ~ Age + Sex + SmokStat + Quetelet + VitUse + Calories + 
+        Fat + Fiber + Alcohol + Cholesterol + BetaDiet, plasma, nsamp = 50, thin = 2)
 
 \dontrun{
 betas <- coef(fit.qrj) ## no plots
 }
-betas <- coef(fit.qrj, plot = TRUE, col = "darkgreen") ## estimates are plotted
+
+betas <- coef(fit.qrj, plot = TRUE) ## estimates are plotted
 }
 \keyword{programming}

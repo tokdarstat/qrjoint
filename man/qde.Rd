@@ -1,5 +1,5 @@
 \name{qde}
-\Rdversion{1.0-5}
+\Rdversion{2.0}
 \alias{qde}
 \alias{update.qde}
 \title{Quantiles based Density Estimation}
@@ -19,7 +19,7 @@ qde <- function(y, nsamp = 1e3, thin = 10, cens = rep(0,length(y)),
 \item{y}{numeric vector of response data.}
 \item{nsamp}{number of posterior samples to be saved; defaults to 1000.}
 \item{thin}{thinning rate for the Markov chain sampler -- one posterior sample is saved per \code{thin} iterations. Defaults to 10. The Markov chain sampler runs for a total of \code{nsamp * thin} many iterations.}
-\item{cens}{censoring status of response. Must be a vector of 0s and 1s of length same as length(y), with 1 indicating right censoring, and, 0 indicating no censoring. Defaults to all zeros.}
+\item{cens}{censoring status of response. Must be a vector of length length(y), with 0 indicating no censoring, 1 indicating right censoring, and 2 indicating left censoring. Defaults to all zeros.}
 \item{wt}{weights attached to the observation units, expected to be non-negative numbers, and defaults to a vector of ones.}
 \item{incr}{tau grid increment. Defaults to 0.01.}
 \item{par}{character string indicating how the sampler is to be initialized. Only two options are currently supported: "prior" to initialize at a random draw from the prior; "RQ" to initialize at a model space approximation of the estimates from \code{\link{rq}}.}
