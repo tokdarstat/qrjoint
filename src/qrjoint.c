@@ -1096,13 +1096,14 @@ void INIT(double *par, double *xVar, double *yVar, int *status, double *weights,
 //----------------Functions for post MCMC evaluation of Deviance--------------//
 
 
-void DEV_noX(double *par, double *yVar, int *status, double *weights, double *hyper, int *dim, double *gridpars, double *tauG, double *devsamp, double *llsamp, double *pgsamp, double *rpsamp){
+void DEV_noX(double *par, double *yVar, int *status, double *weights, double *hyper, int *dim, double *gridpars, double *tauG, double *devsamp, double *llsamp, double *pgsamp, double *rpsamp, int *distribution){
     
     int i, k, l;
     
     int reach = 0;
     n = dim[reach++]; p = 0; L = dim[reach++]; mid = dim[reach++];
     m = dim[reach++]; ngrid = dim[reach++]; nkap = dim[reach++];
+    dist = distribution[0];
     int niter = dim[reach++], npar = (m+1) + 2;
     
     reach = 0;
@@ -1162,7 +1163,7 @@ void DEV_noX(double *par, double *yVar, int *status, double *weights, double *hy
 
 // Function to calculate post-hoc the Deviance at each iteration; 
 // called within the summary.qrjoint function in R
-void DEV(double *par, double *xVar, double *yVar, int *status, double *weights, int *toShrink, double *hyper, int *dim, double *gridpars, double *tauG, double *devsamp, double *llsamp, double *pgsamp, double *rpsamp){
+void DEV(double *par, double *xVar, double *yVar, int *status, double *weights, int *toShrink, double *hyper, int *dim, double *gridpars, double *tauG, double *devsamp, double *llsamp, double *pgsamp, double *rpsamp, int *distribution){
 	
 	int i, j, k, l;
 	
@@ -1170,6 +1171,7 @@ void DEV(double *par, double *xVar, double *yVar, int *status, double *weights, 
 	shrink = toShrink[0];
 	n = dim[reach++]; p = dim[reach++]; L = dim[reach++]; mid = dim[reach++]; 
 	m = dim[reach++]; ngrid = dim[reach++]; nkap = dim[reach++];
+	dist = distribution[0];
 	int niter = dim[reach++], npar = (m+1)*(p+1) + 2;
 	
 	taugrid = tauG;
@@ -1241,13 +1243,14 @@ void DEV(double *par, double *xVar, double *yVar, int *status, double *weights, 
 }
 
 
-void PRED_noX(double *par, double *yGrid, double *hyper, int *dim, double *gridpars, double *tauG, double *logdenssamp){
+void PRED_noX(double *par, double *yGrid, double *hyper, int *dim, double *gridpars, double *tauG, double *logdenssamp, int *distribution){
     
     int i, k, l;
     
     int reach = 0;
     n = dim[reach++]; p = 0; L = dim[reach++]; mid = dim[reach++];
     m = dim[reach++]; ngrid = dim[reach++]; nkap = dim[reach++];
+    dist = distribution[0];
     int niter = dim[reach++], npar = (m+1) + 2;
     
     reach = 0;
