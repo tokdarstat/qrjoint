@@ -1,4 +1,4 @@
-useDynLib("qrjointEB")
+useDynLib("qrjoint")
 
 # Export all functions listed below
 export(
