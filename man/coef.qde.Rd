@@ -1,16 +1,17 @@
-\name{coef.qrjoint}
-\Rdversion{1.0-5}
+\name{coef.qde}
+\Rdversion{2.0}
 \alias{coef.qde}
 \title{Coefficient Extraction from qde Model Fit}
 \description{Post process MCMC output from \code{\link{qde}} to create summaries of the quantile estimates.}
 \usage{ 
-\method{coef}{qde}(object, burn.perc = 0.5, nmc = 200, reduce = TRUE)
+\method{coef}{qde}(object, burn.perc = 0.5, nmc = 200, reduce = TRUE, ...)
 } 
 \arguments{
 \item{object}{a fitted model of the class \code{qde}.}
 \item{burn.perc}{a positive fraction indicating what fraction of the saved draws are to be discarded as burn-in}
 \item{nmc}{integer giving the number of samples, post burn-in, to be used in Monte Carlo averaging}
 \item{reduce}{logical indicating if the tail-expanded grid of tau values is to be reduced to the regular increment grid}
+\item{...}{not currently implemented}
 }
 \value{
 Extracts posterior draws of intercept and slope functions from saved draws of model parameters. A plot may be obtained if \code{plot = TRUE}. A list is returned invisibly with three fields.

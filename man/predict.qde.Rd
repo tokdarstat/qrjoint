@@ -1,7 +1,7 @@
 \name{summary.qde}
-\Rdversion{1.0-5}
+\Rdversion{2.0}
 \alias{predict.qde}
-\title{Posterior predictive Summary for Quantile based Density Estimation}
+\title{Posterior predictive summary for quantile-based density estimation}
 \description{Extract posterior predictive density estimate for \code{\link{qde}}}
 \usage{ 
 \method{predict}{qde}(object, burn.perc = 0.5, nmc = 200, yRange = range(object$y), yLength = 401)
@@ -32,8 +32,6 @@ Y <- Y + 0.1 * rnorm(length(Y)) ## remove atomicity
 fit.qde <- qde(Y, 50, 2)
 pred <- predict(fit.qde)
 hist(Y, freq = FALSE, col = "gray", border = "white", ylim = c(0, max(pred$fest)))
-lines(pred$y, pred$fest[,2])
-lines(pred$y, pred$fest[,1], lty = 2)
-lines(pred$y, pred$fest[,3], lty = 2)
+matplot(pred$y, pred$fest, type="l", col=1, lty=c(2,1,2), ylab="Density", xlab="y")
 }
 \keyword{programming}

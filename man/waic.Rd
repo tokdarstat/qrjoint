@@ -1,5 +1,5 @@
 \name{waic}
-\Rdversion{0.1-1}
+\Rdversion{2.0}
 \alias{waic}
 \title{Watanabe Information Criterion}
 \description{Calculates two versions of the Watanabe information criteria from MCMC draws.} 
@@ -28,21 +28,19 @@ plasma$SmokStat <- as.factor(plasma$SmokStat)
 plasma$VitUse <- 3 - plasma$VitUse
 plasma$VitUse <- as.factor(plasma$VitUse)
 
-# creating predictors and response (beta carotene concentration in the plasma)
-X <- model.matrix(BetaPlasma ~ Age + Sex + SmokStat + Quetelet + VitUse + Calories + 
-        Fat + Fiber + Alcohol + Cholesterol + BetaDiet, data = plasma)[,-1]
-Y <- plasma$BetaPlasma
-
-# model fitting with 50 posterior samples from 100 iterations (thin = 2)
-fit.qrj <- qrjoint(X, Y, 50, 2)
-sm <- summary(fit.qrj, plot = FALSE)
+# Model fitting with 40 posterior samples from 80 iterations (thin = 2) is for
+# illustration only. For practical model fitting, increase iterations, 
+# e.g. nsamp = 500, thin = 20
+fit.qrj <- qrjoint(BetaPlasma ~ Age + Sex + SmokStat + Quetelet + VitUse + Calories + 
+        Fat + Fiber + Alcohol + Cholesterol + BetaDiet, plasma, nsamp = 40, thin = 2)
+summary(fit.qrj, more = TRUE)
 
 # the call to summary already shows the waic for the fitted model, it also returns 
 # the observation level log-likelihood vales. To calculate waic from last 20 draws 
 # we can use:
 
 ll <- sm$ll
-waic(ll[,31:50])
+waic(ll[,21:40])
 }
 
 

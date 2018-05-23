@@ -1,5 +1,5 @@
 \name{qrjoint-internal}
-\Rdversion{0.1-1}
+\Rdversion{2.0}
 \alias{estFn}
 \alias{ppFn0}
 \alias{ppFn}
