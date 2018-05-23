@@ -1,10 +1,10 @@
-\name{summary.qde}
+\name{predict.qde}
 \Rdversion{2.0}
 \alias{predict.qde}
 \title{Posterior predictive summary for quantile-based density estimation}
-\description{Extract posterior predictive density estimate for \code{\link{qde}}}
+\description{Extract posterior predictive density estimate for \code{\link{qde}}}
 \usage{ 
-\method{predict}{qde}(object, burn.perc = 0.5, nmc = 200, yRange = range(object$y), yLength = 401)
+\method{predict}{qde}(object, burn.perc = 0.5, nmc = 200, yRange = range(object$y), yLength = 401, ...)
 } 
 \arguments{
     \item{object}{a fitted model of the class 'qde'.}
@@ -12,6 +12,7 @@
     \item{nmc}{integer giving the number of samples, post burn-in, to be used in Monte Carlo averaging}
     \item{yRange}{Range of values over which posterior predictive density is to be evaluated.}
     \item{yLength}{Number of grid points spanning yRange for posterior predictive density evaluation.}
+    \item{...}{Currently no additional arguments are allowed.}
 }
 \value{
 Returns a list with three items:
