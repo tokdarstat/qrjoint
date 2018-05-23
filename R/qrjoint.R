@@ -903,7 +903,7 @@ summary.qde <- function(object, ntrace = 1000, burn.perc = 0.5, plot.dev = TRUE,
 # summarize:  Logical - medians of MC posterior
 
 
-predict.qrjoint <- function(object, newdata=NULL, summarize=TRUE, burn.perc = 0.5, nmc = 200){
+predict.qrjoint <- function(object, newdata=NULL, summarize=TRUE, burn.perc = 0.5, nmc = 200, ...){
   p <- object$dim[2];
   betas <- coef(object, burn.perc=burn.perc, nmc=nmc, plot=FALSE)
   nsamp <- dim(betas$beta.samp)[3]
@@ -929,7 +929,7 @@ predict.qrjoint <- function(object, newdata=NULL, summarize=TRUE, burn.perc = 0.
   return(pred)
 } 
 
-predict.qde <- function(object, burn.perc = 0.5, nmc = 200, yRange = range(object$y), yLength = 401){
+predict.qde <- function(object, burn.perc = 0.5, nmc = 200, yRange = range(object$y), yLength = 401, ...){
     thin <- object$dim[8]
     nsamp <- object$dim[9]
     pars <- matrix(object$parsamp, ncol = nsamp)
