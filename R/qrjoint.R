@@ -770,7 +770,7 @@ summary.qrjoint <- function(object, ntrace = 1000, burn.perc = 0.5, plot.dev = T
 	  # Calcuate deviance
     sm <- .C("DEV", pars = as.double(pars[,ss]), x = as.double(object$x), y = as.double(object$y), cens = as.integer(object$cens), wt = as.double(object$wt),
 			 shrink = as.integer(object$shrink), hyper = as.double(object$hyper), dim = as.integer(dimpars), gridmats = as.double(object$gridmats), tau.g = as.double(object$tau.g),
-			 devsamp = double(length(ss)), llsamp = double(length(ss)*n), pgsamp = double(length(ss)*ngrid*(p+1)), rpsamp = double(length(ss)*n))
+			 devsamp = double(length(ss)), llsamp = double(length(ss)*n), pgsamp = double(length(ss)*ngrid*(p+1)), rpsamp = double(length(ss)*n),fbase.choice = as.integer(object$fbase.choice))
 	deviance <- sm$devsamp
 	ll <- matrix(sm$llsamp, ncol = length(ss))
 	rp <- matrix(sm$rpsamp, ncol = length(ss))
@@ -841,7 +841,7 @@ summary.qde <- function(object, ntrace = 1000, burn.perc = 0.5, plot.dev = TRUE,
     n <- object$dim[1]; p <- 0; ngrid <- object$dim[5]
     sm <- .C("DEV_noX", pars = as.double(pars[,ss]), y = as.double(object$y), cens = as.integer(object$cens), wt = as.double(object$wt),
 			 hyper = as.double(object$hyper), dim = as.integer(dimpars), gridmats = as.double(object$gridmats), tau.g = as.double(object$tau.g),
-             devsamp = double(length(ss)), llsamp = double(length(ss)*n), pgsamp = double(length(ss)*ngrid), rpsamp=double(length(ss)*n))
+             devsamp = double(length(ss)), llsamp = double(length(ss)*n), pgsamp = double(length(ss)*ngrid), rpsamp=double(length(ss)*n),fbase.choice = as.integer(object$fbase.choice))
     deviance <- sm$devsamp
     ll <- matrix(sm$llsamp, ncol = length(ss))
     rp <- matrix(sm$rpsamp, ncol = length(ss))
@@ -941,7 +941,7 @@ predict.qde <- function(object, burn.perc = 0.5, nmc = 200, yRange = range(objec
     n <- object$dim[1]; p <- 0; ngrid <- object$dim[5]
     dimpars[1] <- yLength
     
-    pred <- .C("PRED_noX", pars = as.double(pars[,ss]), yGrid = as.double(yGrid), hyper = as.double(object$hyper), dim = as.integer(dimpars), gridmats = as.double(object$gridmats), tau.g = as.double(object$tau.g), ldenssamp = double(length(ss)*yLength))
+    pred <- .C("PRED_noX", pars = as.double(pars[,ss]), yGrid = as.double(yGrid), hyper = as.double(object$hyper), dim = as.integer(dimpars), gridmats = as.double(object$gridmats), tau.g = as.double(object$tau.g), ldenssamp = double(length(ss)*yLength),fbase.choice = as.integer(object$fbase.choice))
     dens <- matrix(exp(pred$ldenssamp), ncol = length(ss))
     return(list(y = yGrid, fsamp = dens, fest = t(apply(dens, 1, quantile, pr = c(.025, .5, .975)))))
 }
