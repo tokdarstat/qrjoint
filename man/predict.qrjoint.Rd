@@ -4,13 +4,14 @@
 \title{Posterior predictive summary for quantile estimation}
 \description{Extract quantile functions for \code{\link{qrjoint}}}
 \usage{ 
-\method{predict}{qrjoint}(object, newdata=NULL, summarize=TRUE, burn.perc = 0.5, nmc = 200)
+\method{predict}{qrjoint}(object, newdata=NULL, summarize=TRUE, burn.perc = 0.5, nmc = 200, ...)
 } 
 \arguments{
     \item{object}{a fitted model of the class 'qrjoint'.}
     \item{newdata}{an optional data frame in which to look for variables with which to predict. If omitted, the fitted data are used.}
     \item{burn.perc}{a positive fraction indicating what fraction of the saved draws are to be discarded as burn-in}
     \item{nmc}{integer giving the number of samples, post burn-in, to be used in Monte Carlo averaging}
+    \item{...}{currently no additional arguments are allowed}
 }
 \value{Either returns
 \item{}{a matrix of posterior quantile-function medians if \code{summarize=TRUE}. Dimensions are \code{n} (number of rows in predicted data) x \code{L} (length of regularized tau.grid); or}
