@@ -2,7 +2,7 @@
 \Rdversion{2.0}
 \alias{predict.qde}
 \title{Posterior predictive summary for quantile-based density estimation}
-\description{Extract posterior predictive density estimate for \code{\link{qde}}}
+\description{Extract posterior predictive density estimate for \code{\link{qde}}}
 \usage{ 
 \method{predict}{qde}(object, burn.perc = 0.5, nmc = 200, yRange = range(object$y), yLength = 401, ...)
 } 
@@ -13,6 +13,7 @@
     \item{yRange}{range of values over which posterior predictive density is to be evaluated}
     \item{yLength}{number of grid points spanning yRange for posterior predictive density evaluation}
     \item{...}{currently no additional arguments are allowed}
+
 }
 \value{
 Returns a list with three items:
