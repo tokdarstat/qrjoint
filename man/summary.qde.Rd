@@ -4,7 +4,8 @@
 \title{Summary Method for Quantile based Density Estimation}
 \description{Summarize model fit for \code{\link{qde}}}
 \usage{ 
-\method{summary}{qde}(object, ntrace = 1000, burn.perc = 0.5, plot.dev = TRUE, more.details = FALSE, ...)
+\method{summary}{qde}(object, ntrace = 1000, burn.perc = 0.5, plot.dev = TRUE, 
+more.details = FALSE, ...)
 } 
 \arguments{
     \item{object}{a fitted model of the class 'qde'.}
@@ -21,7 +22,7 @@ The following quantities are returned invisibly.
 \item{deviance}{vector deviance statistic of the samples parameter draws} 
 \item{pg}{a matrix with \code{nsamp} number of columns, each columns could be coerced into a matrix of dimension \code{ngrid * (p+1)}, where the columns gives the conditional posterior weights on the lambda grid values for the corresponding GP function.}       
 \item{prox}{posterior draws of proximity in the form of a \code{(p+1)*nsamp} matrix.}
-\item{ll}{a matrix of \code{n*nsamp} containing observation level log-likelihood contributions. Used to calculate \var{waic}, and could be used for other AIC calculations.}
+\item{ll}{a matrix of \code{n*nsamp} containing observation-level log-likelihood contributions. Used to calculate \var{waic}, and could be used for other AIC calculations.}
 \item{rp}{a matrix of \code{n*nsamp} containing observation-level estimated response proportions.} 
 \item{waic}{Two versions of Watanabe AIC from Gelman, Hwang and Vehtari (2014).}
 }
