@@ -167,7 +167,7 @@ double F0(double x, double nu) {
 }
 
 // Adjustments to tails of base function's q0
-// In tails of q0, replace with very heavy tailed t-distribution (df=0.1)
+// In tails of q0, replace with very heavy tailed t-distribution 
 double q0tail(double u, double nu) {
     double val;
     switch (dist) {
@@ -182,6 +182,22 @@ double q0tail(double u, double nu) {
             break;
     }
     return val;
+}
+
+
+// Adjustments to F0 in the tail
+double F0tail(double x, double nu) {
+  double val;
+  switch (dist) {
+  case 2:
+    //val = punif(u, -1.0, 1.0, 1, 0);
+    val = pt(x, nu, 1, 0);
+    break;
+  default:
+    val = pt(x, nu, 1, 0);
+  break;
+  }
+  return val;
 }
 
 // Adjustments to Q0 in the tail
@@ -361,7 +377,7 @@ double logpostFn_noX(double *par, double temp, int llonly, double *ll, double *p
                     QPos = Q0Pos[l];
                 }
                 if(l == L - mid - 1) {
-                  rp[i] = F0(Q0tail(taugrid[L-2], nu) + (resLin[i] - QPosold)/sigmat1, nu) ;
+                  rp[i] = F0tail(Q0tail(taugrid[L-2], nu) + (resLin[i] - QPosold)/sigmat1, nu) ;
                   switch (cens[i]) {
                     case 1: ll[i] = log(1.0 - rp[i]); break;
                     case 2: ll[i] = log(rp[i]); break;
@@ -385,7 +401,7 @@ double logpostFn_noX(double *par, double temp, int llonly, double *ll, double *p
                     QNeg = Q0Neg[l];
                 }
                 if(l == mid) {
-                  rp[i] = F0(Q0tail(taugrid[1], nu) + (resLin[i] + QNegold)/sigmat2, nu) ;
+                  rp[i] = F0tail(Q0tail(taugrid[1], nu) + (resLin[i] + QNegold)/sigmat2, nu) ;
                   switch (cens[i]) {
                     case 1: ll[i] = log(1.0 - rp[i]); break;
                     case 2: ll[i] = log(rp[i]); break;
@@ -539,7 +555,7 @@ double logpostFn(double *par, double temp, int llonly, double *ll, double *pg, d
                 }
                 // if point located above largest grid tau...
                 if(l == L - mid - 1){
-                  rp[i] = F0(Q0tail(taugrid[L-2], nu) + (resLin[i] - QPosold)/sigmat1, nu) ;
+                  rp[i] = F0tail(Q0tail(taugrid[L-2], nu) + (resLin[i] - QPosold)/sigmat1, nu) ;
                     switch (cens[i]) {
                     case 1: ll[i] = log(1.0 - rp[i]); break;
                     case 2: ll[i] = log(rp[i]); break;
@@ -567,7 +583,7 @@ double logpostFn(double *par, double temp, int llonly, double *ll, double *pg, d
                     for(QNeg = Q0Neg[l], j = 0; j < p; j++) QNeg += x[i][j] * bNeg[j][l];
                 }
                 if(l == mid){               // tail
-                    rp[i] = F0(Q0tail(taugrid[1], nu) + (resLin[i] + QNegold)/sigmat2, nu) ;
+                    rp[i] = F0tail(Q0tail(taugrid[1], nu) + (resLin[i] + QNegold)/sigmat2, nu) ;
                     switch (cens[i]) {
                       case 1: ll[i] = log(1.0 - rp[i]); break;
                       case 2: ll[i] = log(rp[i]); break;
