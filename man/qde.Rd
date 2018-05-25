@@ -6,7 +6,7 @@
 \description{Provides a semiparametric estimation of the quantiles for independented univariate data with possible right censoring. This is same as estimating the intercept function within a joint linear quantile regression model with no predictors.
 }
 \usage{
-qde <- function(y, nsamp = 1e3, thin = 10, cens = NULL,
+qde(y, nsamp = 1e3, thin = 10, cens = NULL,
     wt = NULL, incr = 0.01, par = "prior", nknots = 6,
     hyper = list(sig = c(.1,.1), lam = c(6,4), kap = c(0.1,0.1,1)),
     prox.range = c(.2,.95), acpt.target = 0.15, ref.size = 3,
@@ -100,10 +100,10 @@ In running the MCMC, the following menu choices are available for blocking the p
 data(plasma)
 Y <- plasma$BetaPlasma
 
-# model fitting with 40 posterior samples from 80 iterations (thin = 2)
+# model fitting with 100 posterior samples from 200 iterations (thin = 2)
 # this is of course for illustration, for practical model fitting you
 # ought to try at least something like nsamp = 500, thin = 20
-fit.qde <- qde(Y, nsamp = 40, thin = 2)
+fit.qde <- qde(Y, nsamp = 100, thin = 2)
 summary(fit.qde, more = TRUE)
 pred <- predict(fit.qde)
 hist(Y, freq = FALSE, col = "gray", border = "white", ylim = c(0, max(pred$fest)))
