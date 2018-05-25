@@ -8,21 +8,22 @@
 } 
 \arguments{
     \item{object}{a fitted model of the class 'qrjoint'.}
-    \item{newdata}{an optional data frame in which to look for variables with which to predict. If omitted, the fitted data are used.}
+    \item{newdata}{an optional data frame containing variables on which to predict. If omitted, the fitted data are used.}
+    \item{summarize}{a logical indicating whether the quantile functions should be summarized across posterior draws into a single estimate (TRUE) or be left as individual samples (FALSE)}
     \item{burn.perc}{a positive fraction indicating what fraction of the saved draws are to be discarded as burn-in}
     \item{nmc}{integer giving the number of samples, post burn-in, to be used in Monte Carlo averaging}
     \item{...}{currently no additional arguments are allowed}
 }
 \value{Either returns
-\item{}{a matrix of posterior quantile-function medians if \code{summarize=TRUE}. Dimensions are \code{n} (number of rows in predicted data) x \code{L} (length of regularized tau.grid); or}
+\item{}{a matrix of posterior quantile-function estimates if \code{summarize=TRUE}. Dimensions are \code{n} (number of rows in predicted data) x \code{L} (length of regularized tau.grid); or}
 \item{}{a three dimensional array of posterior quantile-function samples if \code{summarize=FALSE}. Dimensions are \code{n} (number of rows in predicted data) x \code{L} (length of regularized tau.grid)  x \code{nmc} (retained posterior draws).}
 
 }
 
 \note{
-When supplying \code{newdata}, new covariate values should lie within the convex hull of the original observed covariate space; otherwise, it is possible that extrapolated quantile functions will not obey the quantile monotonicity constraint.
+When supplying \code{newdata}, new covariate values should lie within the convex hull of the original fit's covariate space; otherwise, it is possible that extrapolated quantile functions will not obey the quantile monotonicity constraint. For information on expanding the convex hull of the original fit see Detail section of \code{\link{qrjoint}}.
 
-Additional functionality is planned in future release to provide density function estimates given a set of input x.
+Additional functionality is planned in future release to provide density function estimates given a set of input covariates.
 }
 
 \seealso{\code{\link{qrjoint}} and \code{\link{summary.qrjoint}}.}
@@ -44,7 +45,8 @@ fit.qrj <- qrjoint(BetaPlasma ~ Age + Sex + SmokStat + Quetelet + VitUse + Calor
 summary(fit.qrj, more = TRUE)
 
 quants <- predict(fit.qrj)
-matplot(fit.qrj$tau.g[fit.qrj$reg.ix], t(quants), type="l", xlab="p", ylab="Quantile Function", col="lightgray", lty=1)
+matplot(fit.qrj$tau.g[fit.qrj$reg.ix], t(quants), type="l", xlab="p", 
+ylab="Quantile Function", col="lightgray", lty=1)
 
 }
 \keyword{programming}

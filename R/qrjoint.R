@@ -337,8 +337,8 @@ qrjoint <- function(formula, data, nsamp = 1e3, thin = 10, cens = NULL,
     return(oo)
 }
 
-qde <- function(y, nsamp = 1e3, thin = 10, cens = rep(0,length(y)), 
-                wt = rep(1,length(y)), incr = 0.01, par = "prior", nknots = 6, # no shrink
+qde <- function(y, nsamp = 1e3, thin = 10, cens = NULL, 
+                wt = NULL, incr = 0.01, par = "prior", nknots = 6, # no shrink
                 hyper = list(sig = c(.1,.1), lam = c(6,4), kap = c(0.1,0.1,1)),
                 prox.range = c(.2,.95), acpt.target = 0.15, 
                 ref.size = 3, blocking = "single", temp = 1, expo = 2, # different standard algorithm
@@ -361,21 +361,24 @@ qde <- function(y, nsamp = 1e3, thin = 10, cens = rep(0,length(y)),
     
     n <- length(y)
   
-    cens <- as.vector(cens)
-    if(!is.numeric(cens))
-      stop("'cens' must be a numeric vector")
+    if(is.null(cens)) cens <- rep(0,n) else{
+      cens <- as.vector(cens)
+      if(!is.numeric(cens))
+        stop("'cens' must be a numeric vector")
+      
+      if (length(cens) != n) 
+        stop(gettextf("number of cens is %d, should equal %d (number of observations)", 
+                      length(cens), n), domain = NA)}
     
-    if (length(cens) != n) 
-      stop(gettextf("number of cens is %d, should equal %d (number of observations)", 
-                    length(cens), n), domain = NA)
-  
-    wt <- as.vector(wt)
-    if(!is.numeric(wt))
-      stop("'wt' must be a numeric vector")
+    if(is.null(wt)) wt <- rep(1,n) else{
+      wt <- as.vector(wt)
+      if(!is.numeric(wt))
+        stop("'wt' must be a numeric vector")
+      
+      if (length(wt) != n) 
+        stop(gettextf("number of wt is %d, should equal %d (number of observations)", 
+                      length(wt), n), domain = NA)}
     
-    if (length(wt) != n) 
-      stop(gettextf("number of wt is %d, should equal %d (number of observations)", 
-                    length(wt), n), domain = NA)
   
     Ltail <- ceiling(2*log(n,2) + log(incr,2))
 	if(Ltail > 0){

@@ -6,8 +6,8 @@
 \description{ Estimate intercept and slope functions within a joint linear regression model of the quantiles, with possible right or left censoring of the response.
 } 
 \usage{ 
-qrjoint(formula, data, nsamp = 1e3, thin = 10, cens = rep(0,length(y)), 
-    wt = rep(1,length(y)), incr = 0.01, par = "prior", nknots = 6,
+qrjoint(formula, data, nsamp = 1e3, thin = 10, cens = NULL, 
+    wt = NULL, incr = 0.01, par = "prior", nknots = 6,
     hyper = list(sig = c(.1,.1), lam = c(6,4), kap = c(.1,.1,1)), 
     shrink = FALSE, prox.range = c(.2,.95), acpt.target = 0.15, 
     ref.size = 3, blocking = "std5", temp = 1, expo = 2, 
@@ -20,8 +20,8 @@ qrjoint(formula, data, nsamp = 1e3, thin = 10, cens = rep(0,length(y)),
 \item{data}{a data frame containing variables in the model.}
 \item{nsamp}{number of posterior samples to be saved; defaults to 1000.}
 \item{thin}{thinning rate for the Markov chain sampler -- one posterior sample is saved per \code{thin} iterations. Defaults to 10. The Markov chain sampler runs for a total of \code{nsamp * thin} many iterations.}
-\item{cens}{censoring status of response. Must be a vector of length NROW(data), with 0 indicating no censoring, 1 indicating right censoring, and 2 indicating left censoring. Defaults to all zeros.}
-\item{wt}{weights attached to the observation units, expected to be non-negative numbers, and defaults to a vector of ones.}
+\item{cens}{censoring status of response. Must be a vector of length NROW(data), with 0 indicating no censoring, 1 indicating right censoring, and 2 indicating left censoring. If not supplied, defaults to all zeros.}
+\item{wt}{weights attached to the observation units, expected to be non-negative numbers, and defaults to a vector of ones if not otherwise supplied.}
 \item{incr}{tau grid increment. Defaults to 0.01.} 
 \item{par}{character string indicating how the sampler is to be initialized. Three options are currently supported: "prior" to initialize at a random draw from the prior; "RQ" to initialize at a model space approximation of the estimates from \code{\link{rq}}; and, "noX" to initialize at a model with all slope functions being equal to zero, and the intercept function obtained by fitting \code{qde} to the response data alone.}
 \item{nknots}{number of knots to be used for low rank approximation of the Gaussian process priors. Defaults to 6.}
@@ -81,7 +81,7 @@ Returned object is a list containing the following variables.
 
 A formula has an implied intercept term. This model requires that the intercept term be included; therefore, it cannot be explicitely removed via (y ~ 0 + x) or (y ~ -1 + x) constructs.
 
-The model assumes each conditional quantile of the response is a hyper-plane. The intercept and slope functions (as functons of the response proportion) are estimated under the constraint that the resulting quantile planes are non-crossing over some closed, convex predictor domain. The domain is equated, by default, to the convex hull of the observed predictor vectors. The input argument \code{wt} provides more flexibility in the domain specification. All observation units are used in calculating the convex hull -- but only those with non-zero weights are used in the likelihood evaluation.
+The model assumes each conditional quantile of the response is a hyper-plane. The intercept and slope functions (as functons of the response proportion) are estimated under the constraint that the resulting quantile planes are non-crossing over some closed, convex predictor domain. The domain is equated, by default, to the convex hull of the observed predictor vectors. The input argument \code{wt} provides more flexibility in the domain specification. All observation units are used in calculating the convex hull, but only those with non-zero weights are used in the likelihood evaluation. By including pseudo-points with zero weight (e.g. covariates from a test dataframe), the boundaries of the predictor domain can be expanded.
 
 In running the MCMC, the following menu choices are available for blocking the parameter vector. Below, \code{p = ncol(X)}.
 

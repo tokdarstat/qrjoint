@@ -10,9 +10,10 @@
     \item{object}{a fitted model of the class 'qde'.}
     \item{burn.perc}{a positive fraction indicating what fraction of the saved draws are to be discarded as burn-in}
     \item{nmc}{integer giving the number of samples, post burn-in, to be used in Monte Carlo averaging}
-    \item{yRange}{Range of values over which posterior predictive density is to be evaluated.}
-    \item{yLength}{Number of grid points spanning yRange for posterior predictive density evaluation.}
-    \item{...}{Currently no additional arguments are allowed.}
+    \item{yRange}{range of values over which posterior predictive density is to be evaluated}
+    \item{yLength}{number of grid points spanning yRange for posterior predictive density evaluation}
+    \item{...}{currently no additional arguments are allowed}
+
 }
 \value{
 Returns a list with three items:

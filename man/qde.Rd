@@ -6,8 +6,8 @@
 \description{Provides a semiparametric estimation of the quantiles for independented univariate data with possible right censoring. This is same as estimating the intercept function within a joint linear quantile regression model with no predictors.
 }
 \usage{
-qde <- function(y, nsamp = 1e3, thin = 10, cens = rep(0,length(y)),
-    wt = rep(1,length(y)), incr = 0.01, par = "prior", nknots = 6,
+qde <- function(y, nsamp = 1e3, thin = 10, cens = NULL,
+    wt = NULL, incr = 0.01, par = "prior", nknots = 6,
     hyper = list(sig = c(.1,.1), lam = c(6,4), kap = c(0.1,0.1,1)),
     prox.range = c(.2,.95), acpt.target = 0.15, ref.size = 3,
     blocking = "single", temp = 1, expo = 2, blocks.mu, blocks.S,
@@ -19,8 +19,8 @@ qde <- function(y, nsamp = 1e3, thin = 10, cens = rep(0,length(y)),
 \item{y}{numeric vector of response data.}
 \item{nsamp}{number of posterior samples to be saved; defaults to 1000.}
 \item{thin}{thinning rate for the Markov chain sampler -- one posterior sample is saved per \code{thin} iterations. Defaults to 10. The Markov chain sampler runs for a total of \code{nsamp * thin} many iterations.}
-\item{cens}{censoring status of response. Must be a vector of length length(y), with 0 indicating no censoring, 1 indicating right censoring, and 2 indicating left censoring. Defaults to all zeros.}
-\item{wt}{weights attached to the observation units, expected to be non-negative numbers, and defaults to a vector of ones.}
+\item{cens}{censoring status of response. Must be a vector of length length(y), with 0 indicating no censoring, 1 indicating right censoring, and 2 indicating left censoring. If not supplied, defaults to all zeros.}
+\item{wt}{weights attached to the observation units, expected to be non-negative numbers, and defaults to a vector of ones if not otherwise supplied.}
 \item{incr}{tau grid increment. Defaults to 0.01.}
 \item{par}{character string indicating how the sampler is to be initialized. Only two options are currently supported: "prior" to initialize at a random draw from the prior; "RQ" to initialize at a model space approximation of the estimates from \code{\link{rq}}.}
 \item{nknots}{number of knots to be used for low rank approximation of the Gaussian process priors. Defaults to 6.}
