@@ -4,8 +4,8 @@
 \title{Summary Method for Quantile based Density Estimation}
 \description{Summarize model fit for \code{\link{qde}}}
 \usage{ 
-\method{summary}{qde}(object, ntrace = 1000, burn.perc = 0.5, plot.dev = TRUE, 
-more.details = FALSE, ...)
+\method{summary}{qde}(object, ntrace = 1000, burn.perc = 0.5, 
+                      plot.dev = TRUE, more.details = FALSE, ...)
 } 
 \arguments{
     \item{object}{a fitted model of the class 'qde'.}
