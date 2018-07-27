@@ -122,6 +122,9 @@ double q0(double u, double nu) {
     double val;
     switch (dist) {
         case 2:
+            val = 1.0 / dlogis(qlogis(unitFn(u), 0.0, 1.0, 1, 0), 0.0, 1.0, 0);
+            break;
+        case 3:
             val = 1.0 / dunif(qunif(u, -1.0, 1.0, 1, 0), -1.0, 1.0, 0);
             break;
         default:
@@ -139,6 +142,9 @@ double Q0(double u, double nu) {
     double val;
     switch (dist) {
         case 2:
+            val = qlogis(unitFn(u), 0.0, 1.0, 1, 0);
+            break;
+        case 3:
             val = qunif(u, -1.0, 1.0, 1, 0);
             break;
         default:
@@ -155,6 +161,9 @@ double F0(double x, double nu) {
     double val;
     switch (dist) {
         case 2:
+            val = plogis(x, 0.0, 1.0, 1, 0);
+            break;
+        case 3:
             val = punif(x, -1.0, 1.0, 1, 0);
             break;
         default:
@@ -172,12 +181,12 @@ double q0tail(double u, double nu) {
     double val;
     switch (dist) {
         case 2:
-            //val = 1.0/dunif(qunif(u, -1.0, 1.0, 1, 0), -1.0, 1.0, 0);
-            //val = 1.0/dt(qt(u, 0.1, 1, 0), 0.1, 0);
-            val = 1.0/dt(qt(u, nu, 1, 0), nu, 0);
+            val = 1.0/dlogis(qlogis(u, 0.0, 1.0, 1, 0), 0.0, 1.0, 0);
+            break;
+        case 3:
+            val = 1.0/dt(qt(u, 0.5, 1, 0), 0.5, 0);
             break;
         default:
-            //val = 1.0/dt(qt(u, 0.1, 1, 0), 0.1, 0);
             val = 1.0/dt(qt(u, nu, 1, 0), nu, 0);
             break;
     }
@@ -189,13 +198,16 @@ double q0tail(double u, double nu) {
 double F0tail(double x, double nu) {
   double val;
   switch (dist) {
-  case 2:
-    //val = punif(u, -1.0, 1.0, 1, 0);
-    val = pt(x, nu, 1, 0);
-    break;
-  default:
-    val = pt(x, nu, 1, 0);
-  break;
+      case 2:
+          val = plogis(x, 0.0, 1.0, 1, 0);
+          break;
+      case 3:
+          //val = punif(u, -1.0, 1.0, 1, 0);
+          val = pt(x, nu, 1, 0);
+          break;
+      default:
+          val = pt(x, nu, 1, 0);
+          break;
   }
   return val;
 }
@@ -205,8 +217,9 @@ double Q0tail(double u, double nu) {
     double val;
     switch (dist) {
         case 2:
-            //val = qunif(u, -1.0, 1.0, 1, 0);
-            //val = qt(u, 0.1, 1, 0);
+            val = qlogis(unitFn(u), 0.0, 1.0, 1, 0);
+            break;
+        case 3:
             val = qt(u, nu, 1, 0);
             break;
         default:
@@ -222,8 +235,11 @@ double lf0tail(double x, double nu){
     double val;
     switch (dist) {
         case 2:
+            val = dlogis(x, 0.0, 1.0, 1);
             //val = dunif(x, -1.0, 1.0, 1);
             //val = dt(x, 0.1, 1);
+            break;
+        case 3:
             val = dt(x, nu, 1);   // dt(value, df, 1=log)
             break;
         default:

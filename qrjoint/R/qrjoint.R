@@ -5,15 +5,20 @@ qrjoint <- function(formula, data, nsamp = 1e3, thin = 10, cens = NULL,
                     hyper = list(sig = c(.1,.1), lam = c(6,4), kap = c(0.1,0.1,1)),
                     shrink = FALSE, prox.range = c(.2,.95), acpt.target = 0.15,
                     ref.size = 3, blocking = "std5", temp = 1, expo = 2,
-                    blocks.mu, blocks.S, fix.nu = FALSE, fbase = c("t", "unif"), verbose = TRUE){
+                    blocks.mu, blocks.S, fix.nu = FALSE, fbase = c("t", "logistic", "unif"), verbose = TRUE){
 
     # Set up base functions
-    fbase.choice <- match(fbase[1], c("t", "unif"))
-    if(is.na(fbase.choice)) stop("Only 't' or 'unif' is allowed for the choice of fbase")
+    fbase.choice <- match(fbase[1], c("t", "logistic", "unif"))
+    if(is.na(fbase.choice)) stop("Only 't', 'logistic' or 'unif' is allowed for the choice of fbase")
     if(fbase.choice == 1){
         q0 <- function(u, nu = Inf) return(1 / (dt(qt(unitFn(u), df = nu), df = nu) * qt(.9, df = nu)))
         Q0 <- function(u, nu = Inf) return(qt(unitFn(u), df = nu) / qt(.9, df = nu))
         F0 <- function(x, nu = Inf) return(pt(x*qt(.9, df = nu), df = nu))
+    } else if(fbase.choice == 2){
+        fix.nu <- 1
+        q0 <- function(u, nu = 1) return(1 / dlogis(qlogis(unitFn(u))))
+        Q0 <- function(u, nu = 1) return(qlogis(unitFn(u)))
+        F0 <- function(x, nu = 1) return(plogis(x))
     } else {
         fix.nu <- 1
         q0 <- function(u, nu = Inf) return(1 / (dunif(qunif(u, -1,1), -1,1)))
@@ -283,7 +288,7 @@ qrjoint <- function(formula, data, nsamp = 1e3, thin = 10, cens = NULL,
         for(i in 0:p) blocks[[i + 1]][c(i * nknots + 1:nknots, nknots*(p+1) + i + 1)] <- TRUE
         blocks[[p + 2]][nknots*(p+1) + 1:(p+1)] <- TRUE
         blocks[[p + 3]][(nknots+1)*(p+1) + 1:2] <- TRUE
-        blocks[[p+4]][1:npar] <- TRUE
+        blocks[[p + 4]][1:npar] <- TRUE
     } else {                                                                # Univariate updates
         blocks <- replicate(npar, rep(FALSE, npar), simplify = FALSE)
         for(i in 1:npar) blocks[[i]][i] <- TRUE
@@ -296,18 +301,19 @@ qrjoint <- function(formula, data, nsamp = 1e3, thin = 10, cens = NULL,
     blocks.size <- sapply(blocks, sum)                                      # Size of MVN in each block update
     if(missing(blocks.mu)) blocks.mu <- rep(0, sum(blocks.size))
     if(missing(blocks.S)){
+        sig.nu <- c(TRUE, !as.logical(fix.nu))
         blocks.S <- lapply(blocks.size, function(q) diag(1, q))
         if(substr(blocking, 1, 3) == "std"){
             for(i in 1:(p+1)) blocks.S[[i]][1:nknots, 1:nknots] <- K0
             if(as.numeric(substr(blocking, 4,5)) > 1){
                 blocks.S[[p + 2]] <- summary(suppressWarnings(rq(dither(y) ~ x, tau = 0.5, weights = wt)), se = "boot", cov = TRUE)$cov
-                blocks.S[[p + 3]] <- matrix(c(1, 0, 0, .1), 2, 2)
+                blocks.S[[p + 3]] <- matrix(c(1, 0, 0, .1), 2, 2)[sig.nu,sig.nu]
             }
             if(as.numeric(substr(blocking, 4,5)) == 5){
                 slist <- list(); length(slist) <- p + 3
                 for(i in 1:(p+1)) slist[[i]] <- K0
                 slist[[p+2]] <- summary(suppressWarnings(rq(dither(y) ~ x, tau = 0.5, weights = wt)), se = "boot", cov = TRUE)$cov
-                slist[[p+3]] <- matrix(c(1, 0, 0, .1), 2, 2)
+                slist[[p+3]] <- matrix(c(1, 0, 0, .1), 2, 2)[sig.nu,sig.nu]
                 blocks.S[[p + 4]] <- as.matrix(bdiag(slist))
             }
         }
@@ -344,12 +350,17 @@ qde <- function(y, nsamp = 1e3, thin = 10, cens = NULL,
                 ref.size = 3, blocking = "single", temp = 1, expo = 2, # different standard algorithm
                 blocks.mu, blocks.S, fix.nu = FALSE, fbase = c("t", "unif"), verbose = TRUE){
 	
-    fbase.choice <- match(fbase[1], c("t", "unif"))
-    if(is.na(fbase.choice)) stop("Only 't' or 'unif' is allowed for the choice of fbase")
+    fbase.choice <- match(fbase[1], c("t", "logistic", "unif"))
+    if(is.na(fbase.choice)) stop("Only 't', 'logistic' or 'unif' is allowed for the choice of fbase")
     if(fbase.choice == 1){
         q0 <- function(u, nu = Inf) return(1 / (dt(qt(unitFn(u), df = nu), df = nu) * qt(.9, df = nu)))
         Q0 <- function(u, nu = Inf) return(qt(unitFn(u), df = nu) / qt(.9, df = nu))
         F0 <- function(x, nu = Inf) return(pt(x*qt(.9, df = nu), df = nu))
+    } else if(fbase.choice == 2){
+        fix.nu <- 1
+        q0 <- function(u, nu = 1) return(1 / dlogis(qlogis(unitFn(u))))
+        Q0 <- function(u, nu = 1) return(qlogis(unitFn(u)))
+        F0 <- function(x, nu = 1) return(plogis(x))
     } else {
         fix.nu <- 1
         q0 <- function(u, nu = Inf) return(1 / (dunif(qunif(u, -1,1), -1,1)))
@@ -675,6 +686,10 @@ coef.qrjoint <- function(object, burn.perc = 0.5, nmc = 200, plot = FALSE, show.
         base.bundle$q0 <- function(u, nu = Inf) return(1 / (dt(qt(unitFn(u), df = nu), df = nu) * qt(.9, df = nu)))
         base.bundle$Q0 <- function(u, nu = Inf) return(qt(unitFn(u), df = nu) / qt(.9, df = nu))
         base.bundle$F0 <- function(x, nu = Inf) return(pt(x*qt(.9, df = nu), df = nu))
+    } else if(object$fbase.choice == 2){
+        base.bundle$q0 <- function(u, nu = 1) return(1 / dlogis(qlogis(unitFn(u))))
+        base.bundle$Q0 <- function(u, nu = 1) return(qlogis(unitFn(u)))
+        base.bundle$F0 <- function(x, nu = 1) return(plogis(x))
     } else {
         base.bundle$q0 <- function(u, nu = Inf) return(1 / (dunif(qunif(u, -1,1), -1,1)))
         base.bundle$Q0 <- function(u, nu = Inf) return(qunif(u, -1,1))
@@ -736,6 +751,10 @@ coef.qde <- function(object, burn.perc = 0.5, nmc = 200, reduce = TRUE, ...){
         base.bundle$q0 <- function(u, nu = Inf) return(1 / (dt(qt(unitFn(u), df = nu), df = nu) * qt(.9, df = nu)))
         base.bundle$Q0 <- function(u, nu = Inf) return(qt(unitFn(u), df = nu) / qt(.9, df = nu))
         base.bundle$F0 <- function(x, nu = Inf) return(pt(x*qt(.9, df = nu), df = nu))
+    } else if(object$fbase.choice == 2){
+        base.bundle$q0 <- function(u, nu = 1) return(1 / dlogis(qlogis(unitFn(u))))
+        base.bundle$Q0 <- function(u, nu = 1) return(qlogis(unitFn(u)))
+        base.bundle$F0 <- function(x, nu = 1) return(plogis(x))
     } else {
         base.bundle$q0 <- function(u, nu = Inf) return(1 / (dunif(qunif(u, -1,1), -1,1)))
         base.bundle$Q0 <- function(u, nu = Inf) return(qunif(u, -1,1))
