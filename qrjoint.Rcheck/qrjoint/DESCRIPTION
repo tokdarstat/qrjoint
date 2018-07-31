@@ -9,4 +9,5 @@ Imports: splines, coda, Matrix, kernlab
 Description: Joint estimation of quantile specific intercept and slope parameters in a linear regression setting.
 License: GPL-2
 NeedsCompilation: yes
-Packaged: 2016-07-27 04:38:13 UTC; stokdar
+Packaged: 2018-07-31 19:41:58 UTC; stokdar
+Built: R 3.4.3; x86_64-apple-darwin15.6.0; 2018-07-31 19:42:27 UTC; unix
