@@ -92,7 +92,7 @@ In running the MCMC, the following menu choices are available for blocking the p
 
 \code{"std5"}: total 4 blocks. First three are same as \code{"std4"} and one additional block containing all parameters.
 }
-\references{Yang, Y., and Tokdar, S. T. (2015). Joint Estimation of Quantile Planes over Arbitrary Predictor Spaces.}
+\references{Yang, Y. and Tokdar, S.T., 2017. Joint estimation of quantile planes over arbitrary predictor spaces. Journal of the American Statistical Association, 112(519), pp.1107-1120.}
 \seealso{\code{\link{summary.qde}}, \code{\link{coef.qde}} and \code{\link{predict.qde}}. Also see \code{\link{qrjoint}} for regression model fitting in presence of covariates.}
 \examples{
 ## Plasma data analysis
