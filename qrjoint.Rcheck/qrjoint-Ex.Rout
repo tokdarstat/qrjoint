@@ -610,7 +610,7 @@ Warning in cor(theta) : the standard deviation is zero
 > ###
 > options(digits = 7L)
 > base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
-Time elapsed:  15.58 0.203 15.804 0 0 
+Time elapsed:  16.04 0.212 16.343 0 0 
 > grDevices::dev.off()
 null device 
           1 
