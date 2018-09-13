@@ -50,7 +50,7 @@ int n, p, L, mid, m, nkap, ngrid, shrink, dist;
 //global constants
 double *taugrid, *akap, *bkap, *lpkap, asig, bsig, shrinkFactor, ***Agrid, ***Rgrid, *ldRgrid, *lpgrid, **x, *y, *wt;
 int *cens;
-int * zeta0_tick;
+int *zeta0_tick;
 
 //global variables (i.e memory overwritten multiple times)
 double *lb;
@@ -293,7 +293,7 @@ double shrinkFn(double x){
 double ppFn0(double *wknot, double *w, double *postgrid){
 	int i, l;
 	double akapm, zss;
-	for(i = 0; i < ngrid; i++){                               // i indexes lambdas
+	for(i = 0; i < ngrid; i++){                           // i indexes lambdas
 		mvprod(Agrid[i], wknot, wgrid[i], L, m, 0);       // Agrid is Lxm constant matrix. Multiply Agrid by wknot to produce wgrid.
 		trisolve(Rgrid[i], m, wknot, zknot, 1);           // Rgrid constant. Solve for zknot (in place, creates vector solution) Rgrid'%*%zknot = wknot
 		zss = sumsquares(zknot, m);                       // obtain sums of squares, save in zss
@@ -660,7 +660,7 @@ void BQDE(double *par, double *yVar, int *status, double *weights, double *hyper
 	int i, k, l;
 	
 	int reach = 0;
-        n = dim[reach++]; p = 0; L = dim[reach++]; mid = dim[reach++];
+    n = dim[reach++]; p = 0; L = dim[reach++]; mid = dim[reach++];
 	m = dim[reach++]; ngrid = dim[reach++]; nkap = dim[reach++];
         dist = distribution[0];
 	int niter = dim[reach++], thin = dim[reach++], npar = m+3;
@@ -708,9 +708,10 @@ void BQDE(double *par, double *yVar, int *status, double *weights, double *hyper
 	Q0Pos = vect(L);
 	Q0Neg = vect(L);
 	llvec = vect(n);
+    rpvec = vect(n);
 	pgvec = vect(ngrid);
-        zeta0_tick = ivect(L);
-        zeta0_dist = vect(L);
+    zeta0_tick = ivect(L);
+    zeta0_dist = vect(L);
 	
 	int b;
 	int nblocks = imcmcpar[0], refresh = imcmcpar[1], verbose = imcmcpar[2], ticker = imcmcpar[3];
@@ -1107,9 +1108,9 @@ void INIT(double *par, double *xVar, double *yVar, int *status, double *weights,
 	llvec = vect(n);
 	rpvec = vect(n);
 	pgvec = vect(ngrid*(p+1));
-        zeta0_tick = ivect(L);
-        zeta0_dist = vect(L);
-	
+    zeta0_tick = ivect(L);
+    zeta0_dist = vect(L);
+
 	sig_pos = (m+1)*(p+1);  //position in par of sigma
 	par0 = par;
 	

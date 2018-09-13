@@ -4,16 +4,11 @@
 * using session charset: UTF-8
 * using option ‘--as-cran’
 * checking for file ‘qrjoint/DESCRIPTION’ ... OK
-* this is package ‘qrjoint’ version ‘2.0-1’
+* this is package ‘qrjoint’ version ‘2.0-2’
 * checking CRAN incoming feasibility ... NOTE
 Maintainer: ‘Surya Tokdar <surya.tokdar@duke.edu>’
 
-New maintainer:
-  Surya Tokdar <surya.tokdar@duke.edu>
-Old maintainer(s):
-  Surya Tokdar <tokdar@stat.duke.edu>
-
-The Date field is over a month old.
+Days since last update: 1
 * checking package namespace information ... OK
 * checking package dependencies ... OK
 * checking if this is a source package ... OK

@@ -1,6 +1,6 @@
 Package: qrjoint
-Version: 2.0-1
-Date: 2018-07-31
+Version: 2.0-2
+Date: 2018-09-13
 Title: Joint Estimation in Linear Quantile Regression
 Author: Surya Tokdar <surya.tokdar@duke.edu> and Erika Cunningham <erika.ball@duke.edu>
 Maintainer: Surya Tokdar <surya.tokdar@duke.edu>
@@ -9,5 +9,5 @@ Imports: splines, coda, Matrix, kernlab
 Description: Joint estimation of quantile specific intercept and slope parameters in a linear regression setting.
 License: GPL-2
 NeedsCompilation: yes
-Packaged: 2018-09-07 17:37:07 UTC; stokdar
-Built: R 3.4.3; x86_64-apple-darwin15.6.0; 2018-09-07 17:37:36 UTC; unix
+Packaged: 2018-09-13 14:36:58 UTC; stokdar
+Built: R 3.4.3; x86_64-apple-darwin15.6.0; 2018-09-13 14:38:15 UTC; unix

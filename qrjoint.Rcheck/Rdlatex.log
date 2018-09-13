@@ -156,7 +156,7 @@ dist/fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/2015/texmf-dist/fonts
 /type1/urw/times/utmr8a.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/urw
 /times/utmr8a.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/urw/times/utm
 ri8a.pfb>
-Output written on Rd2.pdf (21 pages, 172170 bytes).
+Output written on Rd2.pdf (21 pages, 172168 bytes).
 Transcript written on Rd2.log.
 This is makeindex, version 2.15 [TeX Live 2015] (kpathsea + Thai support).
 Scanning input file Rd2.idx....done (71 entries accepted, 0 rejected).
@@ -327,7 +327,7 @@ dist/fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/2015/texmf-dist/fonts
 /type1/urw/times/utmr8a.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/urw
 /times/utmr8a.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/urw/times/utm
 ri8a.pfb>
-Output written on Rd2.pdf (22 pages, 178361 bytes).
+Output written on Rd2.pdf (22 pages, 178357 bytes).
 Transcript written on Rd2.log.
 This is makeindex, version 2.15 [TeX Live 2015] (kpathsea + Thai support).
 Scanning input file Rd2.idx....done (71 entries accepted, 0 rejected).
@@ -493,7 +493,7 @@ dist/fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/2015/texmf-dist/fonts
 /type1/urw/times/utmr8a.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/urw
 /times/utmr8a.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/urw/times/utm
 ri8a.pfb>
-Output written on Rd2.pdf (23 pages, 179098 bytes).
+Output written on Rd2.pdf (23 pages, 179096 bytes).
 Transcript written on Rd2.log.
 This is makeindex, version 2.15 [TeX Live 2015] (kpathsea + Thai support).
 Scanning input file Rd2.idx....done (71 entries accepted, 0 rejected).
@@ -663,4 +663,4 @@ Output written on Rd2.pdf (23 pages, 179503 bytes).
 Transcript written on Rd2.log.
 Saving output to ‘qrjoint-manual.pdf’ ...
 Done
-You may want to clean up by 'rm -rf /var/folders/__/3bj1gsk50s9g_jlk8shlfdq80000gn/T//Rtmpyh7218/Rd2pdfe93590e19c5'
+You may want to clean up by 'rm -rf /var/folders/__/3bj1gsk50s9g_jlk8shlfdq80000gn/T//RtmpNfyItl/Rd2pdf11712124670db'

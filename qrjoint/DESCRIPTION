@@ -1,6 +1,6 @@
 Package: qrjoint
-Version: 2.0-1
-Date: 2018-07-31
+Version: 2.0-2
+Date: 2018-09-13
 Title: Joint Estimation in Linear Quantile Regression
 Author: Surya Tokdar <surya.tokdar@duke.edu> and Erika Cunningham <erika.ball@duke.edu>
 Maintainer: Surya Tokdar <surya.tokdar@duke.edu>
