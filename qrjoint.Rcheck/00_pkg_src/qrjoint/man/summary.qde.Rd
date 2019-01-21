@@ -23,7 +23,7 @@ The following quantities are returned invisibly.
 \item{pg}{a matrix with \code{nsamp} number of columns, each columns could be coerced into a matrix of dimension \code{ngrid * (p+1)}, where the columns gives the conditional posterior weights on the lambda grid values for the corresponding GP function.}       
 \item{prox}{posterior draws of proximity in the form of a \code{(p+1)*nsamp} matrix.}
 \item{ll}{a matrix of \code{n*nsamp} containing observation-level log-likelihood contributions. Used to calculate \var{waic}, and could be used for other AIC calculations.}
-\item{rp}{a matrix of \code{n*nsamp} containing observation-level estimated response proportions.} 
+\item{ql}{a matrix of \code{n*nsamp} containing observation-level estimated quantile levels.}
 \item{waic}{Two versions of Watanabe AIC from Gelman, Hwang and Vehtari (2014).}
 }
 

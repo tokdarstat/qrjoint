@@ -21,6 +21,7 @@ Q0	qrjoint-internal
 q0	qrjoint-internal
 qde	qde
 qrjoint	qrjoint
+redmaple	redmaple
 shrinkFn	qrjoint-internal
 sigFn	qrjoint-internal
 sigFn.inv	qrjoint-internal

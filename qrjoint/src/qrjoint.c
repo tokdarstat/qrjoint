@@ -43,6 +43,9 @@ void transform_grid(double *w, double *v, int *ticks, double *dists);
 double find_tau_lo(double target, double baseline, double a, double b, double taua, double taub);
 double find_tau_up(double target, double baseline, double a, double b, double taua, double taub);
 double part_trape_rp(double loc, double a, double b, double taua, double taub);
+double my_plogis(double x, double loc, double scale, int lower, int inlog);
+double my_qlogis(double p, double loc, double scale, int lower, int inlog);
+double my_dlogis(double x, double loc, double scale, int inlog);
 
 //global integers
 int n, p, L, mid, m, nkap, ngrid, shrink, dist;
@@ -118,6 +121,9 @@ double unitFn(double u){
 // gets pulled in through the Rmath.h package, which in turn calls the
 // nmath.h package -- more info about functions such as dt and qt at
 // https://svn.r-project.org/R/trunk/src/nmath/qt.c
+
+
+
 double q0(double u, double nu) {
     double val;
     switch (dist) {
@@ -783,7 +789,19 @@ void BJQR(double *par, double *xVar, double *yVar, int *status, double *weights,
     // ngrid: number of points on lambda grid
     // nkap: number of columns in kappa
     
+    
     int i, j, k, l;
+
+    //double uu;
+    //Rprintf("qlogis(0.5) = %g (R), %g (Local)\n", qlogis(0.5, 0.0, 1.0, 1, 0), my_qlogis(0.5, 0.0, 1.0, 1, 0));
+    //Rprintf("qlogis(-1.0e-20, log = TRUE) = %g (R), %g (Local)\n", qlogis(-1.0e-20, 0.0, 1.0, 1, 1), my_qlogis(-1.0e-20, 0.0, 1.0, 1, 1));
+    //for(i = 1; i < 10; i++){
+    //    uu = 0.1 * (double)i;
+    //    Rprintf("plogis(qlogis(%g, lower = FALSE)) = %g (R) %g (Local)\n",
+    //            uu,
+    //            plogis(qlogis(uu, 0.0, 1.0, 0, 0), 0.0, 1.0, 1, 0),
+    //            my_plogis(my_qlogis(uu, 0.0, 1.0, 0, 0), 0.0, 1.0, 1, 0));
+    //}
     
     int reach = 0;          //reach reused to move pointers along via reach++
     shrink = toShrink[0];
@@ -1992,3 +2010,30 @@ double find_tau_up(double target, double baseline, double a, double b, double ta
 double part_trape_rp(double loc, double a, double b, double taua, double taub){
   return ((b*(loc - taua)/(taub - taua) + a*(taub - loc)/(taub - taua)));
 }
+
+
+/// logistic distribution local codes
+double my_plogis(double x, double loc, double scale, int lower, int inlog){
+    double xstd = (x - loc)/scale;
+    if(!lower) xstd = -xstd;
+    double val = -log1p(exp(-xstd));
+    if(!inlog) val = exp(val);
+    return val;
+}
+
+double my_qlogis(double u, double loc, double scale, int lower, int inlog){
+    double lpval = u;
+    if(!inlog) lpval = log(lpval);
+    double lpval_recip = lpval + log(expm1(-lpval));
+    double val = lpval - lpval_recip;
+    if(!lower) val = -val;
+    return loc + scale * val;
+}
+
+double my_dlogis(double x, double loc, double scale, int inlog){
+    double lpval = my_plogis(x, loc, scale, 1, 1);
+    double val = 2.0 * lpval + log(expm1(-lpval)) - log(scale);
+    if(!inlog) val = exp(val);
+    return val;
+}
+

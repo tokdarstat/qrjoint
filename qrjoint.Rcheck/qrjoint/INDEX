@@ -11,6 +11,7 @@ predict.qrjoint         Posterior predictive summary for quantile
                         estimation
 qde                     Quantiles based Density Estimation
 qrjoint                 Joint Estimation of Linear Quantile Planes
+redmaple                Basal Areas of Red Maple Trees
 summary.qde             Summary Method for Quantile based Density
                         Estimation
 summary.qrjoint         Summary Method for qrjoint Model Fit

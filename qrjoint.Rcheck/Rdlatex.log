@@ -118,10 +118,11 @@ Overfull \hbox (2.26913pt too wide) in paragraph at lines 637--638
 ob-ject to be used by [][]\T1/zi4/m/n/10 update.qrjoint[][][]\T1/ptm/m/n/10 , [
 ][]\T1/zi4/m/n/10 coef.qrjoint[][][]
 [15] [16] (/usr/local/texlive/2015/texmf-dist/tex/latex/base/utf8.def) [17]
-(/usr/local/texlive/2015/texmf-dist/tex/latex/base/utf8.def) [18] [19]
-(/usr/local/texlive/2015/texmf-dist/tex/latex/base/utf8.def) [20]
+(/usr/local/texlive/2015/texmf-dist/tex/latex/base/utf8.def) [18]
+(/usr/local/texlive/2015/texmf-dist/tex/latex/base/utf8.def) [19] [20]
+(/usr/local/texlive/2015/texmf-dist/tex/latex/base/utf8.def) [21]
 No file Rd2.ind.
-[21] (./Rd2.aux)
+[22] (./Rd2.aux)
 
 Package rerunfilecheck Warning: File `Rd2.out' has changed.
 (rerunfilecheck)                Rerun to get outlines right
@@ -156,12 +157,12 @@ dist/fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/2015/texmf-dist/fonts
 /type1/urw/times/utmr8a.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/urw
 /times/utmr8a.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/urw/times/utm
 ri8a.pfb>
-Output written on Rd2.pdf (21 pages, 172168 bytes).
+Output written on Rd2.pdf (22 pages, 174756 bytes).
 Transcript written on Rd2.log.
 This is makeindex, version 2.15 [TeX Live 2015] (kpathsea + Thai support).
-Scanning input file Rd2.idx....done (71 entries accepted, 0 rejected).
-Sorting entries....done (473 comparisons).
-Generating output file Rd2.ind....done (81 lines written, 1 warning).
+Scanning input file Rd2.idx....done (73 entries accepted, 0 rejected).
+Sorting entries....done (465 comparisons).
+Generating output file Rd2.ind....done (82 lines written, 1 warning).
 Output written in Rd2.ind.
 Transcript written in Rd2.ilg.
 This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015) (preloaded format=pdflatex)
@@ -282,14 +283,15 @@ Overfull \hbox (2.26913pt too wide) in paragraph at lines 637--638
 ob-ject to be used by [][]\T1/zi4/m/n/10 update.qrjoint[][][]\T1/ptm/m/n/10 , [
 ][]\T1/zi4/m/n/10 coef.qrjoint[][][]
 [15] [16] (/usr/local/texlive/2015/texmf-dist/tex/latex/base/utf8.def) [17]
-(/usr/local/texlive/2015/texmf-dist/tex/latex/base/utf8.def) [18] [19]
-(/usr/local/texlive/2015/texmf-dist/tex/latex/base/utf8.def) [20] (./Rd2.ind
-[21]
+(/usr/local/texlive/2015/texmf-dist/tex/latex/base/utf8.def) [18]
+(/usr/local/texlive/2015/texmf-dist/tex/latex/base/utf8.def) [19] [20]
+(/usr/local/texlive/2015/texmf-dist/tex/latex/base/utf8.def) [21] (./Rd2.ind
+[22]
 
 LaTeX Font Warning: Font shape `T1/zi4/m/it' undefined
-(Font)              using `T1/zi4/m/n' instead on input line 71.
+(Font)              using `T1/zi4/m/n' instead on input line 72.
 
-[22]) (./Rd2.aux)
+[23]) (./Rd2.aux)
 
 Package rerunfilecheck Warning: File `Rd2.out' has changed.
 (rerunfilecheck)                Rerun to get outlines right
@@ -327,12 +329,12 @@ dist/fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/2015/texmf-dist/fonts
 /type1/urw/times/utmr8a.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/urw
 /times/utmr8a.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/urw/times/utm
 ri8a.pfb>
-Output written on Rd2.pdf (22 pages, 178357 bytes).
+Output written on Rd2.pdf (23 pages, 180829 bytes).
 Transcript written on Rd2.log.
 This is makeindex, version 2.15 [TeX Live 2015] (kpathsea + Thai support).
-Scanning input file Rd2.idx....done (71 entries accepted, 0 rejected).
-Sorting entries....done (473 comparisons).
-Generating output file Rd2.ind....done (81 lines written, 0 warnings).
+Scanning input file Rd2.idx....done (73 entries accepted, 0 rejected).
+Sorting entries....done (465 comparisons).
+Generating output file Rd2.ind....done (82 lines written, 0 warnings).
 Output written in Rd2.ind.
 Transcript written in Rd2.ilg.
 This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015) (preloaded format=pdflatex)
@@ -453,14 +455,15 @@ Overfull \hbox (2.26913pt too wide) in paragraph at lines 637--638
 ob-ject to be used by [][]\T1/zi4/m/n/10 update.qrjoint[][][]\T1/ptm/m/n/10 , [
 ][]\T1/zi4/m/n/10 coef.qrjoint[][][]
 [15] [16] [17] (/usr/local/texlive/2015/texmf-dist/tex/latex/base/utf8.def)
-[18] (/usr/local/texlive/2015/texmf-dist/tex/latex/base/utf8.def) [19] [20]
-(/usr/local/texlive/2015/texmf-dist/tex/latex/base/utf8.def) [21] (./Rd2.ind
-[22]
+[18] (/usr/local/texlive/2015/texmf-dist/tex/latex/base/utf8.def) [19]
+(/usr/local/texlive/2015/texmf-dist/tex/latex/base/utf8.def) [20] [21]
+(/usr/local/texlive/2015/texmf-dist/tex/latex/base/utf8.def) [22] (./Rd2.ind
+[23]
 
 LaTeX Font Warning: Font shape `T1/zi4/m/it' undefined
-(Font)              using `T1/zi4/m/n' instead on input line 71.
+(Font)              using `T1/zi4/m/n' instead on input line 72.
 
-[23]) (./Rd2.aux)
+[24]) (./Rd2.aux)
 
 LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 
@@ -493,12 +496,12 @@ dist/fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/2015/texmf-dist/fonts
 /type1/urw/times/utmr8a.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/urw
 /times/utmr8a.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/urw/times/utm
 ri8a.pfb>
-Output written on Rd2.pdf (23 pages, 179096 bytes).
+Output written on Rd2.pdf (24 pages, 181808 bytes).
 Transcript written on Rd2.log.
 This is makeindex, version 2.15 [TeX Live 2015] (kpathsea + Thai support).
-Scanning input file Rd2.idx....done (71 entries accepted, 0 rejected).
-Sorting entries....done (467 comparisons).
-Generating output file Rd2.ind....done (81 lines written, 1 warning).
+Scanning input file Rd2.idx....done (73 entries accepted, 0 rejected).
+Sorting entries....done (460 comparisons).
+Generating output file Rd2.ind....done (82 lines written, 1 warning).
 Output written in Rd2.ind.
 Transcript written in Rd2.ilg.
 This is pdfTeX, Version 3.14159265-2.6-1.40.16 (TeX Live 2015) (preloaded format=pdflatex)
@@ -619,14 +622,15 @@ Overfull \hbox (2.26913pt too wide) in paragraph at lines 637--638
 ob-ject to be used by [][]\T1/zi4/m/n/10 update.qrjoint[][][]\T1/ptm/m/n/10 , [
 ][]\T1/zi4/m/n/10 coef.qrjoint[][][]
 [15] [16] [17] (/usr/local/texlive/2015/texmf-dist/tex/latex/base/utf8.def)
-[18] (/usr/local/texlive/2015/texmf-dist/tex/latex/base/utf8.def) [19] [20]
-(/usr/local/texlive/2015/texmf-dist/tex/latex/base/utf8.def) [21] (./Rd2.ind
-[22]
+[18] (/usr/local/texlive/2015/texmf-dist/tex/latex/base/utf8.def) [19]
+(/usr/local/texlive/2015/texmf-dist/tex/latex/base/utf8.def) [20] [21]
+(/usr/local/texlive/2015/texmf-dist/tex/latex/base/utf8.def) [22] (./Rd2.ind
+[23]
 
 LaTeX Font Warning: Font shape `T1/zi4/m/it' undefined
-(Font)              using `T1/zi4/m/n' instead on input line 71.
+(Font)              using `T1/zi4/m/n' instead on input line 72.
 
-[23]) (./Rd2.aux)
+[24]) (./Rd2.aux)
 
 LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 
@@ -659,8 +663,8 @@ dist/fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/2015/texmf-dist/fonts
 /type1/urw/times/utmr8a.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/urw
 /times/utmr8a.pfb></usr/local/texlive/2015/texmf-dist/fonts/type1/urw/times/utm
 ri8a.pfb>
-Output written on Rd2.pdf (23 pages, 179503 bytes).
+Output written on Rd2.pdf (24 pages, 181787 bytes).
 Transcript written on Rd2.log.
 Saving output to ‘qrjoint-manual.pdf’ ...
 Done
-You may want to clean up by 'rm -rf /var/folders/__/3bj1gsk50s9g_jlk8shlfdq80000gn/T//RtmpNfyItl/Rd2pdf11712124670db'
+You may want to clean up by 'rm -rf /var/folders/__/3bj1gsk50s9g_jlk8shlfdq80000gn/T//Rtmp1i8VxO/Rd2pdf69324ffa82c9'

@@ -329,6 +329,26 @@ summary(fit.qrj, more = TRUE)
 base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
 base::cat("qrjoint", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
 cleanEx()
+nameEx("redmaple")
+### * redmaple
+
+flush(stderr()); flush(stdout())
+
+base::assign(".ptime", proc.time(), pos = "CheckExEnv")
+### Name: redmaple
+### Title: Basal Areas of Red Maple Trees
+### Aliases: redmaple
+### Keywords: datasets
+
+### ** Examples
+
+data(redmaple)
+
+
+
+base::assign(".dptime", (proc.time() - get(".ptime", pos = "CheckExEnv")), pos = "CheckExEnv")
+base::cat("redmaple", base::get(".format_ptime", pos = 'CheckExEnv')(get(".dptime", pos = "CheckExEnv")), "\n", file=base::get(".ExTimings", pos = 'CheckExEnv'), append=TRUE, sep="\t")
+cleanEx()
 nameEx("summary.qde")
 ### * summary.qde
 
@@ -387,29 +407,29 @@ fit.qrj <- qrjoint(BetaPlasma ~ Age + Sex + SmokStat + Quetelet + VitUse + Calor
 summ <- summary(fit.qrj, more = TRUE)
 
 ## Not run: 
-##D # Visually assess uniformity of response proportions with histogram and qqplot
+##D # Visually assess uniformity of quantile levels with histogram and qqplot
 ##D # Notes: Can assess across all MCMC draws (as below) or for single iteration;
-##D # adjustments to response proportions will be needed for censored observations
-##D hist(summ$rp, breaks=40, freq=F)
+##D # adjustments to quantile levels will be needed for censored observations
+##D hist(summ$ql, breaks=40, freq=F)
 ##D curve(dunif(x),add=T)
-##D qqplot(summ$rp, qunif(ppoints(length(summ$rp))),xlab="actual", ylab="theoretical")
+##D qqplot(summ$ql, qunif(ppoints(length(summ$ql))),xlab="actual", ylab="theoretical")
 ##D abline(0,1)
 ##D 
-##D # Visually assess linearity assumption using response proportions
+##D # Visually assess linearity assumption using quantile levels
 ##D # Notes: Can assess across all MCMC draws or for single iteration (as below)
 ##D 
-##D # Loess gives visual of center of response proportions across covariate;
+##D # Loess gives visual of center of quantile levels across covariate;
 ##D # trend line should be near 0.5
 ##D library(ggplot2)
-##D use <- sample(1:ncol(summ$rp),1)
-##D plasma$rpsamp <- summ$rp[,use]
-##D ggplot(data=plasma, aes(x=Age, y=rpsamp)) + geom_point() + geom_smooth(se=F, 
+##D use <- sample(1:ncol(summ$ql),1)
+##D plasma$qlsamp <- summ$ql[,use]
+##D ggplot(data=plasma, aes(x=Age, y=qlsamp)) + geom_point() + geom_smooth(se=F,
 ##D method="loess")
 ##D 
 ##D # Violin plot allows for assessment of entire distribution across covariate;
 ##D # densities within decile bins should be blocky-uniform 
 ##D cut_dec <- function(x) factor(cut(x, quantile(x,0:10/10),inc=TRUE),labels=1:10)
-##D ggplot(data=plasma, aes(x=cut_dec(Age), y=rpsamp)) + geom_violin() + 
+##D ggplot(data=plasma, aes(x=cut_dec(Age), y=qlsamp)) + geom_violin() +
 ##D xlab("Age Decile Bins")
 ## End(Not run)
 
