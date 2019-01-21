@@ -23,7 +23,7 @@ The following quantities are returned invisibly.
 \item{pg}{a matrix with \code{nsamp} number of columns, each columns could be coerced into a matrix of dimension \code{ngrid * (p+1)}, where the columns gives the conditional posterior weights on the lambda grid values for the corresponding GP function.}       
 \item{prox}{posterior draws of proximity in the form of a \code{(p+1)*nsamp} matrix.}
 \item{ll}{a matrix of \code{n*nsamp} containing observation-level log-likelihood contributions. Used to calculate \var{waic}, and could be used for other AIC calculations.}
-\item{rp}{a matrix of \code{n*nsamp} containing observation-level estimated response proportions (i.e. t such that \eqn{y = Q(t|x)}) at each posterior draw. These may be used in lieu of residuals to assess model fit and assumption of linearity.}
+\item{ql}{a matrix of \code{n*nsamp} containing observation-level estimated quantile levels (i.e. t such that \eqn{y = Q(t|x)}) at each posterior draw. These may be used in lieu of residuals to assess model fit and assumption of linearity.}
 \item{waic}{Two versions of Watanabe AIC from Gelman, Hwang and Vehtari (2014).}
 }
 
@@ -47,29 +47,29 @@ fit.qrj <- qrjoint(BetaPlasma ~ Age + Sex + SmokStat + Quetelet + VitUse + Calor
 summ <- summary(fit.qrj, more = TRUE)
 
 \dontrun{
-# Visually assess uniformity of response proportions with histogram and qqplot
+# Visually assess uniformity of quantile levels with histogram and qqplot
 # Notes: Can assess across all MCMC draws (as below) or for single iteration;
-# adjustments to response proportions will be needed for censored observations
-hist(summ$rp, breaks=40, freq=F)
+# adjustments to quantile levels will be needed for censored observations
+hist(summ$ql, breaks=40, freq=F)
 curve(dunif(x),add=T)
-qqplot(summ$rp, qunif(ppoints(length(summ$rp))),xlab="actual", ylab="theoretical")
+qqplot(summ$ql, qunif(ppoints(length(summ$ql))),xlab="actual", ylab="theoretical")
 abline(0,1)
 
-# Visually assess linearity assumption using response proportions
+# Visually assess linearity assumption using quantile levels
 # Notes: Can assess across all MCMC draws or for single iteration (as below)
 
-# Loess gives visual of center of response proportions across covariate;
+# Loess gives visual of center of quantile levels across covariate;
 # trend line should be near 0.5
 library(ggplot2)
-use <- sample(1:ncol(summ$rp),1)
-plasma$rpsamp <- summ$rp[,use]
-ggplot(data=plasma, aes(x=Age, y=rpsamp)) + geom_point() + geom_smooth(se=F, 
+use <- sample(1:ncol(summ$ql),1)
+plasma$qlsamp <- summ$ql[,use]
+ggplot(data=plasma, aes(x=Age, y=qlsamp)) + geom_point() + geom_smooth(se=F,
 method="loess")
 
 # Violin plot allows for assessment of entire distribution across covariate;
 # densities within decile bins should be blocky-uniform 
 cut_dec <- function(x) factor(cut(x, quantile(x,0:10/10),inc=TRUE),labels=1:10)
-ggplot(data=plasma, aes(x=cut_dec(Age), y=rpsamp)) + geom_violin() + 
+ggplot(data=plasma, aes(x=cut_dec(Age), y=qlsamp)) + geom_violin() +
 xlab("Age Decile Bins")
 }
 

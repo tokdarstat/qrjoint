@@ -248,6 +248,9 @@ qrjoint <- function(formula, data, nsamp = 1e3, thin = 10, cens = NULL,
         fit0 <- qde(y, nsamp = 1e2, thin = 10, cens = cens, wt = wt, nknots = nknots, hyper = hyper, prox.range = prox.range, fbase = fbase, fix.nu = fix.nu, verbose = FALSE)
         par <- rep(0, (nknots + 1) * (p + 1) + 2)
         par[c(1:nknots, nknots * (p + 1) + 1, (nknots + 1) * (p + 1) + 1:2)] <- fit0$par
+    } else {
+        if(!is.numeric(par)) stop(paste0("'par' must be initialized either as a numeric vector of length", (nknots + 1)*(p+1) + 2, " or, as one of the following strings: 'prior', 'RQ', 'noX'"))
+        if(length(par) != (nknots + 1)*(p+1) + 2) stop(paste0("'par' numeric vector must have length = ", (nknots + 1)*(p+1) + 2))
     }
     
 	# Choose a blocking scheme for updates.
@@ -793,10 +796,10 @@ summary.qrjoint <- function(object, ntrace = 1000, burn.perc = 0.5, plot.dev = T
 	  # Calcuate deviance
     sm <- .C("DEV", pars = as.double(pars[,ss]), x = as.double(object$x), y = as.double(object$y), cens = as.integer(object$cens), wt = as.double(object$wt),
 			 shrink = as.integer(object$shrink), hyper = as.double(object$hyper), dim = as.integer(dimpars), gridmats = as.double(object$gridmats), tau.g = as.double(object$tau.g),
-			 devsamp = double(length(ss)), llsamp = double(length(ss)*n), pgsamp = double(length(ss)*ngrid*(p+1)), rpsamp = double(length(ss)*n),fbase.choice = as.integer(object$fbase.choice))
+			 devsamp = double(length(ss)), llsamp = double(length(ss)*n), pgsamp = double(length(ss)*ngrid*(p+1)), qlsamp = double(length(ss)*n),fbase.choice = as.integer(object$fbase.choice))
 	deviance <- sm$devsamp
 	ll <- matrix(sm$llsamp, ncol = length(ss))
-	rp <- matrix(sm$rpsamp, ncol = length(ss))
+	ql <- matrix(sm$qlsamp, ncol = length(ss))
 	fit.waic <- waic(ll[,post.burn])
 	pg <- matrix(sm$pgsamp, ncol = length(ss))
 	prox.samp <- matrix(NA, p+1, length(ss))
@@ -846,10 +849,10 @@ summary.qrjoint <- function(object, ntrace = 1000, burn.perc = 0.5, plot.dev = T
 		mtext(c("BH-10%", "5%"), side = 4, at = c(0.1, 0.05), line = 0.1, las = 0, cex = 0.6)
 		
 		npar <- length(object$par)
-		image(1:npar, 1:npar, cor(theta), xlab = "Parameter index", ylab = "Parameter index", main = "Parameter correlation")
+		suppressWarnings(image(1:npar, 1:npar, cor(theta), xlab = "Parameter index", ylab = "Parameter index", main = "Parameter correlation"))
 		suppressWarnings(par(cur.par,no.readonly = TRUE))
 	}
-	invisible(list(deviance = deviance, pg = pg, prox = prox.samp, ll = ll, rp = rp, waic = fit.waic))
+	invisible(list(deviance = deviance, pg = pg, prox = prox.samp, ll = ll, ql = ql, waic = fit.waic))
 }
 
 summary.qde <- function(object, ntrace = 1000, burn.perc = 0.5, plot.dev = TRUE, more.details = FALSE, ...){
@@ -864,10 +867,10 @@ summary.qde <- function(object, ntrace = 1000, burn.perc = 0.5, plot.dev = TRUE,
     n <- object$dim[1]; p <- 0; ngrid <- object$dim[5]
     sm <- .C("DEV_noX", pars = as.double(pars[,ss]), y = as.double(object$y), cens = as.integer(object$cens), wt = as.double(object$wt),
 			 hyper = as.double(object$hyper), dim = as.integer(dimpars), gridmats = as.double(object$gridmats), tau.g = as.double(object$tau.g),
-             devsamp = double(length(ss)), llsamp = double(length(ss)*n), pgsamp = double(length(ss)*ngrid), rpsamp=double(length(ss)*n),fbase.choice = as.integer(object$fbase.choice))
+             devsamp = double(length(ss)), llsamp = double(length(ss)*n), pgsamp = double(length(ss)*ngrid), qlsamp=double(length(ss)*n),fbase.choice = as.integer(object$fbase.choice))
     deviance <- sm$devsamp
     ll <- matrix(sm$llsamp, ncol = length(ss))
-    rp <- matrix(sm$rpsamp, ncol = length(ss))
+    ql <- matrix(sm$qlsamp, ncol = length(ss))
     fit.waic <- waic(ll[,post.burn])
     pg <- matrix(sm$pgsamp, ncol = length(ss))
     prox.samp <- object$prox[apply(pg[1:ngrid,], 2, function(pr) sample(length(pr), 1, prob = pr))]
@@ -914,7 +917,7 @@ summary.qde <- function(object, ntrace = 1000, burn.perc = 0.5, plot.dev = TRUE,
         image(1:npar, 1:npar, cor(theta), xlab = "Parameter index", ylab = "Parameter index", main = "Parameter correlation")
         suppressWarnings(par(cur.par,no.readonly = TRUE)) 
     }
-    invisible(list(deviance = deviance, pg = pg, prox = prox.samp, ll = ll, rp=rp, waic = fit.waic))
+    invisible(list(deviance = deviance, pg = pg, prox = prox.samp, ll = ll, ql=ql, waic = fit.waic))
 }
 
 #########################################################################
