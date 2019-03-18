@@ -1,0 +1,18 @@
+chull.center            Fast Interior Point Center of Multivariate Data
+coef.qde                Coefficient Extraction from qde Model Fit
+coef.qrjoint            Regression Coefficient Extraction from qrjoint
+                        Model Fit
+getBands                Posterior Credible Bands
+plasma                  Plasma Concentration of Beta-Carotene and
+                        Retinol
+predict.qde             Posterior predictive summary for quantile-based
+                        density estimation
+predict.qrjoint         Posterior predictive summary for quantile
+                        estimation
+qde                     Quantiles based Density Estimation
+qrjoint                 Joint Estimation of Linear Quantile Planes
+redmaple                Basal Areas of Red Maple Trees
+summary.qde             Summary Method for Quantile based Density
+                        Estimation
+summary.qrjoint         Summary Method for qrjoint Model Fit
+waic                    Watanabe Information Criterion
