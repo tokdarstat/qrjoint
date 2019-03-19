@@ -925,28 +925,30 @@ summary.qde <- function(object, ntrace = 1000, burn.perc = 0.5, plot.dev = TRUE,
 # object:  Object of class inheriting from "qrjoint"
 # newdata: An optional data frame containing variables on which to predict. If omitted,
 #          the fitted values are used.
-# at:      (optional) tau.grid values (e.g. .5, .9) to keep and return
 # summarize:  Logical - medians of MC posterior
+# burn.perc, nmc, and reduce as specified in the coef.qrjoint function
 
-
-predict.qrjoint <- function(object, newdata=NULL, summarize=TRUE, burn.perc = 0.5, nmc = 200, ...){
+predict.qrjoint <- function(object, newdata=NULL, summarize=TRUE, burn.perc = 0.5, nmc = 200, reduce=TRUE, ...){
   p <- object$dim[2];
-  betas <- coef(object, burn.perc=burn.perc, nmc=nmc, plot=FALSE)
+  betas <- coef(object, burn.perc=burn.perc, nmc=nmc, plot=FALSE, reduce=reduce)
   nsamp <- dim(betas$beta.samp)[3]
   L <- dim(betas$beta.samp)[1]
   
   if(is.null(newdata)) {# if predicting on original data, restore design matrix to original center and scale
     Xpred <- cbind(1, sapply(1:p, function(r) object$x[,r]*attr(object$x,'scaled:scale')[r] + attr(object$x, 'scaled:center')[r]))
   } else{
-    
-    Xpred <- model.matrix(object$terms, data=newdata)
-    # Would be good to add error catching for NA's in newdata dataframe
+    tt <- terms(object)
+    Terms <- delete.response(tt)
+    m <- model.frame(Terms, newdata) # not setting xlev; no object$xlevels saved
+    if (!is.null(cl <- attr(Terms, "dataClasses")))  .checkMFClasses(cl, m)
+    Xpred <- model.matrix(Terms, m) # not setting contrasts; no object$contrasts saved
   }
   npred <- dim(Xpred)[1]
   
   pred <- array(NA, c(npred, L, nsamp))
   for (i in 1:nsamp){ pred[,,i] <- tcrossprod(Xpred, betas$beta.samp[,,i]) }
-  dimnames(pred) <- list(obs=rownames(Xpred), tau=round(object$tau.g[object$reg.ix],4), samp=1:nsamp)
+  if(reduce) {tau <- round(object$tau.g[object$reg.ix],4)} else {tau <- round(object$tau.g,10)}
+  dimnames(pred) <- list(obs=rownames(Xpred), tau=tau, samp=1:nsamp)
   
   # Posterior median as estimate for each observation at each tau
   if(summarize){ 
