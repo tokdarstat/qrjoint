@@ -4,7 +4,7 @@
 \title{Posterior predictive summary for quantile estimation}
 \description{Extract quantile functions for \code{\link{qrjoint}}}
 \usage{ 
-\method{predict}{qrjoint}(object, newdata=NULL, summarize=TRUE, burn.perc = 0.5, nmc = 200, ...)
+\method{predict}{qrjoint}(object, newdata=NULL, summarize=TRUE, burn.perc = 0.5, nmc = 200, reduce=TRUE, ...)
 } 
 \arguments{
     \item{object}{a fitted model of the class 'qrjoint'.}
@@ -12,6 +12,7 @@
     \item{summarize}{a logical indicating whether the quantile functions should be summarized across posterior draws into a single estimate (TRUE) or be left as individual samples (FALSE)}
     \item{burn.perc}{a positive fraction indicating what fraction of the saved draws are to be discarded as burn-in}
     \item{nmc}{integer giving the number of samples, post burn-in, to be used in Monte Carlo averaging}
+    \item{reduce}{logical indicating if the tail-expanded grid of tau values is to be reduced to the regular increment grid}
     \item{...}{currently no additional arguments are allowed}
 }
 \value{Either returns
